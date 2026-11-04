@@ -87,7 +87,7 @@ async function notify(
 async function transition(
   db: Db, env: MonitoringEnv, settings: MonitoringSettings,
   monitor: StoredMonitor, check: CheckResult, checkedAt: Date,
-): Promise<void> {
+): Promise<"up" | "down" | "unknown"> {
   const failures = check.healthy ? 0 : (monitor.consecutiveFailures ?? 0) + 1;
   const successes = check.healthy ? (monitor.consecutiveSuccesses ?? 0) + 1 : 0;
   const status = monitor.status ?? "unknown";
@@ -132,6 +132,7 @@ async function transition(
       if (reminder) await notify(db, env, settings, reminder._id, "REMINDER", monitor, "Service is still unavailable.");
     }
   }
+  return nextStatus;
 }
 
 async function runDue(db: Db, env: MonitoringEnv, settings: MonitoringSettings): Promise<number> {
@@ -146,8 +147,9 @@ async function runDue(db: Db, env: MonitoringEnv, settings: MonitoringSettings):
   }).limit(30).toArray();
   let processed = 0;
   for (const monitor of due) {
-    const interval = Number.isInteger(monitor.intervalMinutes) && monitor.intervalMinutes! >= 1 && monitor.intervalMinutes! <= 60
+    const normalInterval = Number.isInteger(monitor.intervalMinutes) && monitor.intervalMinutes! >= 1 && monitor.intervalMinutes! <= 60
       ? monitor.intervalMinutes! : settings.defaultIntervalMinutes;
+    let nextInterval = normalInterval;
     const reservation = await collection.updateOne({
       _id: monitor._id,
       enabled: true,
@@ -159,13 +161,16 @@ async function runDue(db: Db, env: MonitoringEnv, settings: MonitoringSettings):
     if (!reservation.modifiedCount) continue;
     try {
       const check = await performCheck(monitor);
-      await transition(db, env, settings, monitor, check, new Date());
+      const state = await transition(db, env, settings, monitor, check, new Date());
+      // Switch to rapid confirmation on first failure; keep checking rapidly
+      // during an active incident until recovery is confirmed.
+      nextInterval = !check.healthy || state === "down" ? settings.failureRecheckMinutes : normalInterval;
       processed++;
     } catch (error) {
       console.error("Biosec monitor processing failed", monitor._id.toString(), error instanceof Error ? error.message : "unknown");
     } finally {
       await collection.updateOne({ _id: monitor._id }, {
-        $set: { nextCheckAt: new Date(Date.now() + interval * 60_000) },
+        $set: { nextCheckAt: new Date(Date.now() + nextInterval * 60_000) },
         $unset: { leaseUntil: "" },
       });
     }
