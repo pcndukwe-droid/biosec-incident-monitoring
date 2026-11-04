@@ -106,7 +106,8 @@ async function transition(
     const inserted = await incidents.insertOne({
       monitorId: monitor._id, monitorName: monitor.name, status: "OPEN",
       startedAt: checkedAt, lastFailureAt: checkedAt, failureCount: failures,
-      lastError: check.error ?? null, lastHttpStatus: check.httpStatus ?? null,\n      nextReminderAt: new Date(checkedAt.getTime() + settings.reminderMinutes * 60000),
+      lastError: check.error ?? null, lastHttpStatus: check.httpStatus ?? null,
+      nextReminderAt: new Date(checkedAt.getTime() + settings.reminderMinutes * 60000),
     });
     await notify(db, env, settings, inserted.insertedId, "OPENED", monitor, check.error ?? "Service returned unexpected HTTP status");
   } else if (nextStatus === "up" && status === "down") {
