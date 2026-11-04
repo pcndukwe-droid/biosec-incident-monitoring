@@ -14,7 +14,7 @@ export default function Home() {
       <aside className="sidebar" aria-label="Application navigation">
         <div className="brand"><div className="brand-mark">B<span>.</span></div><div><strong>BIOSEC</strong><small>OPERATIONS</small></div></div>
         <div className="side-section">WORKSPACE</div>
-        <nav>{navigation.map((item, index) => <span key={item} className={index === 0 ? "nav-item active" : "nav-item"}><span className="nav-dot" />{item}{item !== "Overview" && <span className="soon">Soon</span>}</span>)}</nav>
+        <nav>{navigation.map((item, index) => <span key={item} className={index === 0 ? "nav-item active" : "nav-item"}><span className="nav-dot" />{item === "Settings" ? <a href="/settings" style={{color:"inherit",textDecoration:"none"}}>Settings</a> : item}{item !== "Overview" && item !== "Settings" && <span className="soon">Soon</span>}</span>)}</nav>
         <div className="sidebar-foot"><span className="connection-dot" />System setup in progress<small>Biosec Solutions Limited</small></div>
       </aside>
 
