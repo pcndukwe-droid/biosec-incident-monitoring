@@ -13,7 +13,7 @@ type FormState = {
 };
 
 const initial: FormState = {
-  defaultIntervalMinutes: 2, failureThreshold: 3, recoveryThreshold: 2,
+  defaultIntervalMinutes: 20, failureThreshold: 3, recoveryThreshold: 2,
   reminderMinutes: 30, alertRecipients: [], monitoringEnabled: false, emailEnabled: false,
 };
 
