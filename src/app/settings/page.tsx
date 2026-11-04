@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 type FormState = {
   defaultIntervalMinutes: number;
+  failureRecheckMinutes: number;
   failureThreshold: number;
   recoveryThreshold: number;
   reminderMinutes: number;
@@ -13,8 +14,8 @@ type FormState = {
 };
 
 const initial: FormState = {
-  defaultIntervalMinutes: 10, failureThreshold: 3, recoveryThreshold: 2,
-  reminderMinutes: 30, alertRecipients: [], monitoringEnabled: false, emailEnabled: false,
+  defaultIntervalMinutes: 10, failureRecheckMinutes: 1, failureThreshold: 3, recoveryThreshold: 2,
+  reminderMinutes: 5, alertRecipients: [], monitoringEnabled: false, emailEnabled: false,
 };
 
 export default function SettingsPage() {
@@ -74,7 +75,8 @@ export default function SettingsPage() {
       <h2>Scheduler and incident detection</h2>
       <div className="form-grid">
         {([
-          ["defaultIntervalMinutes", "Default interval (minutes)", 1, 60],
+          ["defaultIntervalMinutes", "Routine check interval (minutes)", 1, 60],
+          ["failureRecheckMinutes", "Failed check confirmation interval (minutes)", 1, 10],
           ["failureThreshold", "Failures before incident", 1, 20],
           ["recoveryThreshold", "Successes before recovery", 1, 20],
           ["reminderMinutes", "Reminder interval (minutes)", 5, 1440],
@@ -82,6 +84,7 @@ export default function SettingsPage() {
           <label key={key}>{label}<input type="number" min={min} max={max} step="1" required disabled={!ready} value={settings[key]} onChange={event=>changeNumber(key,event.target.value)}/></label>
         )}
       </div>
+      <p className="help">On the first failed check, the scheduler switches to rapid confirmation checks. After confirmed recovery it returns to the normal interval.</p>
       <h2>Email notifications</h2>
       <label>Incident recipients (comma-separated)
         <textarea value={recipients} disabled={!ready} onChange={event=>setRecipients(event.target.value)} rows={3} placeholder="support@example.com, operations@example.com"/>
