@@ -1,7 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { NextRequest } from "next/server";
-import { readSettings, normalizeSettings, withMonitoringDb, type MonitoringEnv } from "../../../../lib/server/monitoring-db";
+import { readSettings, normalizeSettings, withMonitoringDb, type MonitoringEnv, type MonitoringSettings } from "../../../../lib/server/monitoring-db";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -67,12 +67,13 @@ export async function PUT(request: NextRequest) {
     return Response.json({ error: "Provide up to ten valid email addresses" }, { status: 400 });
   }
   try {
-    const settings = normalizeSettings(input as Partial<import("../../../../lib/server/monitoring-db").MonitoringSettings>);
+    const settings = normalizeSettings(input as Partial<MonitoringSettings>);
     settings.updatedAt = new Date();
     await withMonitoringDb(auth, async db => {
-      await db.collection("monitoring_settings").updateOne(
+      const { _id, ...mutableSettings } = settings;
+      await db.collection<MonitoringSettings>("monitoring_settings").updateOne(
         { _id: "global" },
-        { $set: settings },
+        { $set: mutableSettings },
         { upsert: true },
       );
     });
