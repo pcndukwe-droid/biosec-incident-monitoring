@@ -48,9 +48,9 @@ export async function PUT(request: NextRequest) {
     return Response.json({ error: "Expected settings object" }, { status: 400 });
   }
   const input = json as Record<string, unknown>;
-  const numbers = ["defaultIntervalMinutes", "failureThreshold", "recoveryThreshold", "reminderMinutes"] as const;
+  const numbers = ["defaultIntervalMinutes", "failureRecheckMinutes", "failureThreshold", "recoveryThreshold", "reminderMinutes"] as const;
   const limits: Record<string, [number, number]> = {
-    defaultIntervalMinutes: [1,60], failureThreshold: [1,20],
+    defaultIntervalMinutes: [1,60], failureRecheckMinutes: [1,10], failureThreshold: [1,20],
     recoveryThreshold: [1,20], reminderMinutes: [5,1440],
   };
   for (const key of numbers) {
