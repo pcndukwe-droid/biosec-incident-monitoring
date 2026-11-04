@@ -31,7 +31,7 @@ async function performCheck(monitor: StoredMonitor): Promise<CheckResult> {
 
 async function notify(
   db: Db, env: MonitoringEnv, settings: MonitoringSettings,
-  incidentId: ObjectId, kind: "OPENED" | "RECOVERED", monitor: StoredMonitor,
+  incidentId: ObjectId, kind: "OPENED" | "RECOVERED" | "REMINDER", monitor: StoredMonitor,
   details: string,
 ): Promise<void> {
   if (!settings.emailEnabled || settings.alertRecipients.length === 0) return;
@@ -106,7 +106,7 @@ async function transition(
     const inserted = await incidents.insertOne({
       monitorId: monitor._id, monitorName: monitor.name, status: "OPEN",
       startedAt: checkedAt, lastFailureAt: checkedAt, failureCount: failures,
-      lastError: check.error ?? null, lastHttpStatus: check.httpStatus ?? null,
+      lastError: check.error ?? null, lastHttpStatus: check.httpStatus ?? null,\n      nextReminderAt: new Date(checkedAt.getTime() + settings.reminderMinutes * 60000),
     });
     await notify(db, env, settings, inserted.insertedId, "OPENED", monitor, check.error ?? "Service returned unexpected HTTP status");
   } else if (nextStatus === "up" && status === "down") {
@@ -117,7 +117,19 @@ async function transition(
     );
     if (current) await notify(db, env, settings, current._id, "RECOVERED", monitor, "Service has recovered.");
   } else if (status === "down" && !check.healthy) {
-    await incidents.updateOne({ monitorId: monitor._id, status: "OPEN" }, { $set: { lastFailureAt: checkedAt }, $inc: { failureCount: 1 } });
+    await incidents.updateOne(
+      { monitorId: monitor._id, status: "OPEN" },
+      { $set: { lastFailureAt: checkedAt }, $inc: { failureCount: 1 } },
+    );
+    if (settings.emailEnabled && settings.alertRecipients.length) {
+      // Atomic reservation prevents duplicate reminders if invocations overlap.
+      const reminder = await incidents.findOneAndUpdate(
+        { monitorId: monitor._id, status: "OPEN", nextReminderAt: { $lte: checkedAt } },
+        { $set: { nextReminderAt: new Date(checkedAt.getTime() + settings.reminderMinutes * 60000) } },
+        { returnDocument: "after" },
+      );
+      if (reminder) await notify(db, env, settings, reminder._id, "REMINDER", monitor, "Service is still unavailable.");
+    }
   }
 }
 
