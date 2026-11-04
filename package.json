@@ -14,7 +14,8 @@
     "next": "16.3.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "mongodb": "^6.20.0"
+    "mongodb": "^6.20.0",
+    "jose": "^6.1.0"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "1.20.16",
