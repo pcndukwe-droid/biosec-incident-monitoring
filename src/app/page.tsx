@@ -2,7 +2,7 @@ const navigation = ["Overview", "Monitors", "Incidents", "Reports", "Notificatio
 
 const setupSteps = [
   { label: "Application deployed", note: "Cloudflare Worker + Next.js", done: true },
-  { label: "Scheduled health checks", note: "2-minute Cron configured; checks disabled", done: true },
+  { label: "Scheduled health checks", note: "1-minute scheduler heartbeat; checks disabled", done: true },
   { label: "Database integration", note: "MongoDB Atlas connection not yet configured", done: false },
   { label: "Incident notifications", note: "Support email integration pending", done: false },
   { label: "Admin authentication", note: "Required before exposing operational data", done: false },
@@ -29,7 +29,7 @@ export default function Home() {
           <article className="stat"><div className="stat-label">Registered monitors <span className="mini-icon">◫</span></div><div className="stat-value">0</div><div className="stat-note">No services configured</div></article>
           <article className="stat"><div className="stat-label">Active incidents <span className="mini-icon">!</span></div><div className="stat-value">—</div><div className="stat-note">Incident engine pending</div></article>
           <article className="stat"><div className="stat-label">Uptime (30 days) <span className="mini-icon">↗</span></div><div className="stat-value">—</div><div className="stat-note">No monitoring data available</div></article>
-          <article className="stat"><div className="stat-label">Check schedule <span className="mini-icon">◷</span></div><div className="stat-value">2 <span className="unit">min</span></div><div className="stat-note">Configured; monitoring disabled</div></article>
+          <article className="stat"><div className="stat-label">Check schedule <span className="mini-icon">◷</span></div><div className="stat-value">20 <span className="unit">min</span></div><div className="stat-note">Default; configurable in Settings</div></article>
         </section>
         <div className="detail-grid">
           <section className="panel"><div className="panel-title"><div><h2>Monitored services</h2><p>Availability of your production endpoints and servers</p></div><span className="counter">0 services</span></div><div className="empty-state"><div className="empty-glyph">⌁</div><h3>No monitors configured</h3><p>Once the monitoring engine is connected, authorized Biosec administrators can register server IPs, TCP ports and application health endpoints.</p></div></section>
