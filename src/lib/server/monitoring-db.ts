@@ -23,7 +23,7 @@ export interface MonitoringSettings {
 
 export const DEFAULT_SETTINGS: MonitoringSettings = {
   _id: "global",
-  defaultIntervalMinutes: 20,
+  defaultIntervalMinutes: 10,
   failureThreshold: 3,
   recoveryThreshold: 2,
   reminderMinutes: 30,
@@ -41,7 +41,7 @@ export function normalizeSettings(raw: Partial<MonitoringSettings> | null): Moni
   const settings = raw ?? {};
   return {
     _id: "global",
-    defaultIntervalMinutes: clamp(settings.defaultIntervalMinutes, 20, 1, 60),
+    defaultIntervalMinutes: clamp(settings.defaultIntervalMinutes, 10, 1, 60),
     failureThreshold: clamp(settings.failureThreshold, 3, 1, 20),
     recoveryThreshold: clamp(settings.recoveryThreshold, 2, 1, 20),
     reminderMinutes: clamp(settings.reminderMinutes, 30, 5, 1440),
