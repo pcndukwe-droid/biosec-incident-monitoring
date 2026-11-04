@@ -12,6 +12,7 @@ export type MonitoringEnv = {
 export interface MonitoringSettings {
   _id: "global";
   defaultIntervalMinutes: number;
+  failureRecheckMinutes: number;
   failureThreshold: number;
   recoveryThreshold: number;
   reminderMinutes: number;
@@ -24,9 +25,10 @@ export interface MonitoringSettings {
 export const DEFAULT_SETTINGS: MonitoringSettings = {
   _id: "global",
   defaultIntervalMinutes: 10,
+  failureRecheckMinutes: 1,
   failureThreshold: 3,
   recoveryThreshold: 2,
-  reminderMinutes: 30,
+  reminderMinutes: 5,
   alertRecipients: [],
   emailEnabled: false,
   monitoringEnabled: false,
@@ -42,9 +44,10 @@ export function normalizeSettings(raw: Partial<MonitoringSettings> | null): Moni
   return {
     _id: "global",
     defaultIntervalMinutes: clamp(settings.defaultIntervalMinutes, 10, 1, 60),
+    failureRecheckMinutes: clamp(settings.failureRecheckMinutes, 1, 1, 10),
     failureThreshold: clamp(settings.failureThreshold, 3, 1, 20),
     recoveryThreshold: clamp(settings.recoveryThreshold, 2, 1, 20),
-    reminderMinutes: clamp(settings.reminderMinutes, 30, 5, 1440),
+    reminderMinutes: clamp(settings.reminderMinutes, 5, 5, 1440),
     alertRecipients: Array.isArray(settings.alertRecipients)
       ? [...new Set(settings.alertRecipients.filter((address): address is string =>
           typeof address === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)
