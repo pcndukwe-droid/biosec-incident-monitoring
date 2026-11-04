@@ -20,7 +20,7 @@ The Cloudflare Git integration uses `npm run build:worker` to produce the OpenNe
 
 ## Configurable monitoring and notifications (implementation in progress)
 
-The Worker uses a one-minute Cron wake-up, but **does not** execute every monitor on every wake-up. The application reads `biosec_monitoring.monitoring_settings` and each service's `nextCheckAt`, then atomically reserves only due monitors. The default interval (20 minutes, configurable from 1-60 minutes) and recipient email addresses are stored in MongoDB. One Worker handles both the Next.js dashboard and the monitoring engine.
+The Worker uses a one-minute Cron wake-up, but **does not** execute every monitor on every wake-up. The application reads `biosec_monitoring.monitoring_settings` and each service's `nextCheckAt`, then atomically reserves only due monitors. The default interval (10 minutes, configurable from 1-60 minutes) and recipient email addresses are stored in MongoDB. One Worker handles both the Next.js dashboard and the monitoring engine.
 
 Protected settings UI: `/settings` (disabled until Cloudflare Access is configured).
 
@@ -42,4 +42,4 @@ The monitoring_settings document must have `monitoringEnabled: true` in addition
 
 Incident documents are retained; health checks expire after 90 days. Every confirmed outage gets an OPENED alert; recovery gets a RECOVERED alert; configured interval reminders are emitted while the incident is open.
 
-The default check interval is **20 minutes (3 checks/hour)**. This is a default for newly configured monitors, not the Cloudflare Cron interval (which remains a 1-minute wake-up). Critical monitors can use shorter per-monitor intervals. With three consecutive failures, detection at the default frequency may take approximately 40–60 minutes; configure shorter intervals or a lower threshold when faster alerts are required.
+The default check interval is **10 minutes (6 checks/hour)**. This is a default for newly configured monitors, not the Cloudflare Cron interval (which remains a 1-minute wake-up). Critical monitors can use shorter per-monitor intervals. With three consecutive failures, detection at the default frequency may take approximately 20–30 minutes; configure shorter intervals or a lower threshold when faster alerts are required.
