@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     const user = await withAuthDb(env, async db => {
       const adminUsers = db.collection<StoredUser>("admin_users");
       await adminUsers.createIndex({ username: 1 }, { unique: true });
+      await db.collection("auth_rate_limits").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
       const count = await adminUsers.estimatedDocumentCount();
       if (count !== 0) throw new Error("SETUP_COMPLETE");
       // Only one initializer can claim the singleton id, even if requests race.
