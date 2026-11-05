@@ -1,4 +1,3 @@
-import "server-only";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { MongoClient, ObjectId, type Db } from "mongodb";
 import { SignJWT, jwtVerify } from "jose";
