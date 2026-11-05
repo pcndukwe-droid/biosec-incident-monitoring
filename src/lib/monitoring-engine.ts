@@ -186,6 +186,14 @@ export async function runScheduledChecks(env: MonitoringEnv): Promise<void> {
     const settings = normalizeSettings(await readSettings(db));
     if (!settings.monitoringEnabled) return;
     const count = await runDue(db, env, settings);
+    // Persist a scheduler heartbeat only after the master switch and database toggle
+    // have both permitted execution. The dashboard uses this to distinguish
+    // configured monitoring from a scheduler that is demonstrably running.
+    await db.collection("monitoring_runtime").updateOne(
+      { _id: "scheduler" },
+      { $set: { lastRunAt: new Date(), lastProcessedCount: count } },
+      { upsert: true },
+    );
     console.info("Biosec scheduled check completed", { processed: count });
   });
 }
