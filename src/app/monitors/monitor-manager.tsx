@@ -130,7 +130,7 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
          <tr>
            <td><strong>{m.name}</strong><small>{m.enabled?"Enabled":"Paused"}</small></td>
            <td><strong>{m.method??"GET"}</strong></td><td className="url-cell" title={m.url}>{m.url}</td>
-           <td><span className={"status-chip "+m.status}>{m.status.toUpperCase()}</span></td>
+           <td><span className={"status-chip "+m.status}>{!m.enabled?"PAUSED":!m.lastCheckedAt?"NOT STARTED":m.status.toUpperCase()}</span></td>
            <td>{m.intervalMinutes??"Default"} min</td>
            <td>{m.lastCheckedAt?new Date(m.lastCheckedAt).toLocaleString():"Not checked"}</td>
            <td>{m.lastManualTest?<div className="manual-test-cell">
