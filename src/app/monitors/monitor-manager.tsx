@@ -3,12 +3,14 @@ import { useEffect, useState, type FormEvent } from "react";
 
 type Monitor = {
  id:string; name:string; url:string; type:string; expectedStatus:number; enabled:boolean;
+ method:"GET"|"POST"; requestBody:string|null; responseCheck:"status"|"json-nonempty"|"json-field"; responseField:string|null;
  intervalMinutes:number|null; status:"up"|"down"|"unknown";
  lastCheckedAt:string|null; lastHttpStatus:number|null; lastLatencyMs:number|null;
  lastError:string|null; nextCheckAt:string|null;
 };
-type Draft = { name:string; url:string; expectedStatus:number; enabled:boolean; intervalMinutes:string };
-const empty:Draft={name:"",url:"",expectedStatus:200,enabled:false,intervalMinutes:""};
+type Draft = { name:string; url:string; expectedStatus:number; enabled:boolean; intervalMinutes:string;
+ method:"GET"|"POST"; requestBody:string; responseCheck:"status"|"json-nonempty"|"json-field"; responseField:string; };
+const empty:Draft={name:"",url:"",expectedStatus:200,enabled:false,intervalMinutes:"",method:"GET",requestBody:"",responseCheck:"status",responseField:""};
 export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
  const [items,setItems]=useState<Monitor[]>([]);
  const [draft,setDraft]=useState<Draft>(empty);
@@ -26,13 +28,15 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
  }
  useEffect(()=>{load().catch(e=>setError(e.message)).finally(()=>setLoading(false));},[]);
  function startEdit(m:Monitor){
-   setDraft({name:m.name,url:m.url,expectedStatus:m.expectedStatus,enabled:m.enabled,intervalMinutes:m.intervalMinutes===null?"":String(m.intervalMinutes)});
+   setDraft({name:m.name,url:m.url,expectedStatus:m.expectedStatus,enabled:m.enabled,intervalMinutes:m.intervalMinutes===null?"":String(m.intervalMinutes),
+     method:m.method??"GET",requestBody:m.requestBody??"",responseCheck:m.responseCheck??"status",responseField:m.responseField??""});
    setEditing(m.id);setOpen(true);setError("");setSuccess("");
  }
  function startAdd(){setDraft(empty);setEditing(null);setOpen(true);setError("");setSuccess("");}
  async function save(e:FormEvent<HTMLFormElement>){
    e.preventDefault();setBusy(true);setError("");setSuccess("");
-   const payload={...draft,expectedStatus:Number(draft.expectedStatus),intervalMinutes:draft.intervalMinutes===""?null:Number(draft.intervalMinutes)};
+   const payload={...draft,expectedStatus:Number(draft.expectedStatus),intervalMinutes:draft.intervalMinutes===""?null:Number(draft.intervalMinutes),
+     requestBody:draft.method==="POST"?draft.requestBody:null,responseField:draft.responseCheck==="json-field"?draft.responseField:null};
    try{
      const res=await fetch("/api/admin/monitors",{method:editing?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(editing?{...payload,id:editing}:payload)});
      const data=await res.json();
@@ -46,7 +50,8 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
    try {
      const res=await fetch("/api/admin/monitors",{method:"PATCH",headers:{"Content-Type":"application/json"},
        body:JSON.stringify({id:m.id,name:m.name,url:m.url,expectedStatus:m.expectedStatus,
-         intervalMinutes:m.intervalMinutes,enabled:!m.enabled})});
+         intervalMinutes:m.intervalMinutes,enabled:!m.enabled,method:m.method??"GET",requestBody:m.requestBody,
+         responseCheck:m.responseCheck??"status",responseField:m.responseField,})});
      const d=await res.json();if(!res.ok)throw Error(d.error||"Unable to update");
      await load();setSuccess(m.enabled?"Monitor paused.":"Monitor enabled. Scheduled checks also require both global monitoring switches.");
    }catch(e){setError(e instanceof Error?e.message:"Unable to update");}
@@ -65,7 +70,7 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
  return <section className="workspace-panel">
    <div className="workspace-panel-head"><div><h2>Registered endpoints</h2><p>Secure HTTPS health checks and availability targets</p></div>
      {canEdit&&<button className="primary-action" onClick={startAdd}>+ Add endpoint</button>}</div>
-   <p className="help">HTTPS hostnames on port 443 are supported in this release. Direct server IPs and arbitrary TCP ports require a separate network probe; they are not silently treated as HTTP checks. New monitors start paused by default.</p>
+   <p className="help">Configure GET or POST health probes to public HTTPS endpoints (port 443). POST requests must be safe to repeat and must not create transactions, send messages, or charge money. Never enter secrets or personal information in request bodies. New monitors start paused.</p>
    {error&&<div className="settings-message" role="alert">{error}</div>}
    {success&&<div className="inline-success" role="status">{success}</div>}
    {open&&canEdit&&<form className="monitor-form" onSubmit={save}>
@@ -73,18 +78,25 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
      <div className="monitor-form-grid">
        <label>Service name<input required minLength={3} maxLength={100} value={draft.name} placeholder="eCitizen production API" onChange={e=>setDraft(v=>({...v,name:e.target.value}))}/></label>
        <label>Public HTTPS URL<input type="url" required value={draft.url} placeholder="https://api.example.com/health" onChange={e=>setDraft(v=>({...v,url:e.target.value}))}/></label>
+       <label>Request method<select value={draft.method} onChange={e=>setDraft(v=>({...v,method:e.target.value as Draft["method"],requestBody:e.target.value==="GET"?"":v.requestBody}))}><option value="GET">GET</option><option value="POST">POST</option></select></label>
+       <label>Validate response<select value={draft.responseCheck} onChange={e=>setDraft(v=>({...v,responseCheck:e.target.value as Draft["responseCheck"]}))}>
+         <option value="status">HTTP status only</option><option value="json-nonempty">Valid non-empty JSON</option><option value="json-field">JSON field exists and is non-empty</option>
+       </select></label>
+       {draft.responseCheck==="json-field"&&<label>Required response field<input value={draft.responseField} required maxLength={160} placeholder="data.prices" onChange={e=>setDraft(v=>({...v,responseField:e.target.value}))}/></label>}
        <label>Expected HTTP status<input type="number" min={200} max={399} required value={draft.expectedStatus} onChange={e=>setDraft(v=>({...v,expectedStatus:Number(e.target.value)}))}/></label>
        <label>Check interval (minutes; blank = global default)<input type="number" min={1} max={60} value={draft.intervalMinutes} onChange={e=>setDraft(v=>({...v,intervalMinutes:e.target.value}))} placeholder="Use settings default"/></label>
      </div>
+     {draft.method==="POST"&&<label className="monitor-json-label">JSON request body (optional)<textarea rows={5} maxLength={4096} spellCheck={false} placeholder={'{"ipAddress":"public-ip-here"}'} value={draft.requestBody} onChange={e=>setDraft(v=>({...v,requestBody:e.target.value}))}/></label>}
+     <p className="help">The request is saved in your monitoring configuration and only executes when monitoring is activated. Use POST only for idempotent, non-billable read operations.</p>
      <label className="monitor-check"><input type="checkbox" checked={draft.enabled} onChange={e=>setDraft(v=>({...v,enabled:e.target.checked}))}/> Enable this monitor after saving</label>
      <div className="monitor-form-actions"><button className="primary-action" disabled={busy} type="submit">{busy?"Saving...":editing?"Save changes":"Save endpoint"}</button><button className="secondary-action" type="button" onClick={()=>setOpen(false)}>Cancel</button></div>
    </form>}
    {loading?<p className="muted">Loading monitors...</p>:items.length===0?
      <div className="workspace-empty"><h3>No endpoints registered yet</h3><p>Add your first approved public HTTPS health endpoint to begin configuring monitoring.</p></div>:
-     <div className="table-wrap"><table className="work-table"><thead><tr><th>Service</th><th>Endpoint</th><th>Status</th><th>Schedule</th><th>Last check</th><th>Actions</th></tr></thead>
+     <div className="table-wrap"><table className="work-table"><thead><tr><th>Service</th><th>Method</th><th>Endpoint</th><th>Status</th><th>Schedule</th><th>Last check</th><th>Actions</th></tr></thead>
        <tbody>{items.map(m=><tr key={m.id}>
          <td><strong>{m.name}</strong><small>{m.enabled?"Enabled":"Paused"}</small></td>
-         <td className="url-cell" title={m.url}>{m.url}</td>
+         <td><strong>{m.method??"GET"}</strong></td><td className="url-cell" title={m.url}>{m.url}</td>
          <td><span className={"status-chip "+m.status}>{m.status.toUpperCase()}</span></td>
          <td>{m.intervalMinutes??"Default"} min</td>
          <td>{m.lastCheckedAt?new Date(m.lastCheckedAt).toLocaleString():"Not checked"}</td>
