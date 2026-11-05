@@ -32,6 +32,7 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
  const [testResults,setTestResults]=useState<Record<string,ManualTestResult>>({});
  const [testErrors,setTestErrors]=useState<Record<string,string>>({});
  const [expandedTest,setExpandedTest]=useState<string|null>(null);
+ const [openMenuId,setOpenMenuId]=useState<string|null>(null);
  async function load() {
    const res=await fetch("/api/admin/monitors",{cache:"no-store"});
    const data=await res.json();
@@ -137,21 +138,28 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
              <small>{new Date(m.lastManualTest.testedAt).toLocaleString()}</small>
              <small>{m.lastManualTest.latencyMs} ms · HTTP {m.lastManualTest.httpStatus??"—"}</small>
            </div>:<span className="muted">Not tested</span>}</td>
-           <td>{canEdit?<select className="monitor-actions-select" aria-label={"Actions for "+m.name}
-             value="" disabled={busy||testingId!==null}
-             onChange={event=>{
-               const action=event.target.value;
-               if(action==="test")void testEndpoint(m);
-               else if(action==="edit")startEdit(m);
-               else if(action==="toggle")void toggle(m);
-               else if(action==="delete")void remove(m);
-             }}>
-             <option value="" disabled>Actions ▾</option>
-             <option value="test">Test endpoint</option>
-             <option value="edit">Edit endpoint</option>
-             <option value="toggle">{m.enabled?"Pause monitoring":"Enable monitoring"}</option>
-             <option value="delete">Delete endpoint</option>
-           </select>:"View only"}</td>
+           <td className={"monitor-actions-cell"+(openMenuId===m.id?" action-open-cell":"")}>
+             {canEdit?<div className={"monitor-action-menu"+(openMenuId===m.id?" is-open":"")}
+               onBlur={event=>{
+                 if(!event.currentTarget.contains(event.relatedTarget as Node|null))setOpenMenuId(null);
+               }}>
+               <button type="button" className="monitor-action-trigger"
+                 aria-label={"Open actions for "+m.name} aria-expanded={openMenuId===m.id}
+                 aria-haspopup="true" disabled={busy||testingId!==null}
+                 onClick={()=>setOpenMenuId(current=>current===m.id?null:m.id)}>
+                 <span aria-hidden="true" className="monitor-action-dots">•••</span>
+                 <span>Actions</span>
+                 <span className="monitor-action-chevron" aria-hidden="true">⌄</span>
+               </button>
+               {openMenuId===m.id&&<div className="monitor-action-list" aria-label={"Actions for "+m.name}>
+                 <button type="button" className="monitor-action-item monitor-action-test" onClick={()=>{setOpenMenuId(null);void testEndpoint(m);}}>Test endpoint</button>
+                 <button type="button" className="monitor-action-item monitor-action-edit" onClick={()=>{setOpenMenuId(null);startEdit(m);}}>Edit endpoint</button>
+                 <button type="button" className="monitor-action-item monitor-action-toggle" onClick={()=>{setOpenMenuId(null);void toggle(m);}}>{m.enabled?"Pause monitoring":"Enable monitoring"}</button>
+                 <div className="monitor-action-separator"/>
+                 <button type="button" className="monitor-action-item monitor-action-delete" onClick={()=>{setOpenMenuId(null);void remove(m);}}>Delete endpoint</button>
+               </div>}
+             </div>:"View only"}
+           </td>
          </tr>
          {expandedTest===m.id&&<tr className="manual-test-inline-row"><td colSpan={8}>
            <div className="manual-test-inline" role="status" aria-live="polite">
