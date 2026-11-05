@@ -1,36 +1,12 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { createRemoteJWKSet, jwtVerify } from "jose";
 import { NextRequest } from "next/server";
-import { readSettings, normalizeSettings, withMonitoringDb, type MonitoringEnv, type MonitoringSettings } from "../../../../lib/server/monitoring-db";
+import { requireApiUser, sameOrigin } from "../../../../lib/server/auth";
+import { readSettings, normalizeSettings, withMonitoringDb, type MonitoringSettings } from "../../../../lib/server/monitoring-db";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type AdminEnv = MonitoringEnv & { ACCESS_TEAM_DOMAIN?: string; ACCESS_AUD?: string };
-
-async function authorize(request: NextRequest): Promise<AdminEnv | Response> {
-  const { env } = await getCloudflareContext({ async: true });
-  const bindings = env as unknown as AdminEnv;
-  if (!bindings.ACCESS_TEAM_DOMAIN || !bindings.ACCESS_AUD) {
-    return Response.json({ error: "Administrative access is not configured" }, { status: 503 });
-  }
-  const teamDomain = bindings.ACCESS_TEAM_DOMAIN.trim().replace(/\/$/, "");
-  if (!/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/i.test(teamDomain)) {
-    return Response.json({ error: "Invalid Access domain configuration" }, { status: 503 });
-  }
-  const assertion = request.headers.get("Cf-Access-Jwt-Assertion");
-  if (!assertion) return Response.json({ error: "Authentication required" }, { status: 401 });
-  try {
-    const jwks = createRemoteJWKSet(new URL(teamDomain + "/cdn-cgi/access/certs"));
-    await jwtVerify(assertion, jwks, { issuer: teamDomain, audience: bindings.ACCESS_AUD });
-    return bindings;
-  } catch {
-    return Response.json({ error: "Invalid authentication" }, { status: 401 });
-  }
-}
-
 export async function GET(request: NextRequest) {
-  const auth = await authorize(request);
+  const auth = await requireApiUser(request, "admin");
   if (auth instanceof Response) return auth;
   try {
     const settings = await withMonitoringDb(auth, readSettings);
@@ -41,7 +17,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const auth = await authorize(request);
+  if (!sameOrigin(request)) return Response.json({ error: "Invalid request origin" }, { status: 403 });
+  const auth = await requireApiUser(request, "admin");
   if (auth instanceof Response) return auth;
   const json: unknown = await request.json().catch(() => null);
   if (!json || typeof json !== "object" || Array.isArray(json)) {
