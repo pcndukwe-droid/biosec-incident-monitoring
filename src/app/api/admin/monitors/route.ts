@@ -2,11 +2,12 @@ import { ObjectId, type Document } from "mongodb";
 import { NextRequest } from "next/server";
 import { requireApiUser, sameOrigin } from "../../../../lib/server/auth";
 import { withMonitoringDb } from "../../../../lib/server/monitoring-db";
+import { parseMonitorFields, validateMonitorTarget, type MonitorFields } from "../../../../lib/server/monitor-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type MonitorInput = {
+type MonitorInput = MonitorFields & {
   name: string; url: string; expectedStatus: number;
   intervalMinutes?: number; enabled: boolean;
 };
@@ -19,17 +20,8 @@ function parseMonitor(value: unknown): MonitorInput {
     throw Error("Monitor name must be 3–100 characters");
   if (typeof input.url !== "string" || input.url.length > 2048) throw Error("Enter a valid HTTPS URL");
   let url: URL;
-  try { url = new URL(input.url); } catch { throw Error("Enter a valid HTTPS URL"); }
-  if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443") || url.hash)
-    throw Error("Only HTTPS endpoints on port 443 without credentials or fragments are supported");
-  const host = url.hostname.toLowerCase().replace(/\.$/, "");
-  const isIpv4 = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(host);
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
-      host.endsWith(".internal") || host.endsWith(".test") || host.endsWith(".invalid") ||
-      host.endsWith(".example") || host.endsWith(".onion") ||
-      host === "metadata.google.internal" || host === "169.254.169.254" ||
-      host.includes(":") || isIpv4 || !host.includes("."))
-    throw Error("Use an approved public HTTPS hostname; direct IP and private network checks are not enabled yet");
+  try { url = validateMonitorTarget(input.url); }
+  catch (e) { throw Error(e instanceof Error ? e.message : "Enter a valid HTTPS URL"); }
   if (input.expectedStatus !== undefined && (!Number.isInteger(input.expectedStatus) ||
       Number(input.expectedStatus) < 200 || Number(input.expectedStatus) > 399))
     throw Error("Expected HTTP status must be between 200 and 399");
@@ -38,10 +30,9 @@ function parseMonitor(value: unknown): MonitorInput {
       Number(interval) < 1 || Number(interval) > 60))
     throw Error("Check interval must be between 1 and 60 minutes");
   if (input.enabled !== undefined && typeof input.enabled !== "boolean") throw Error("Invalid enabled value");
-  url.hostname = host;
-  url.hash = "";
   return {
     name: input.name.trim(), url: url.toString(),
+    ...parseMonitorFields(input),
     expectedStatus: Number(input.expectedStatus ?? 200),
     ...(interval === undefined || interval === null ? {} : { intervalMinutes: Number(interval) }),
     enabled: input.enabled === true,
@@ -52,6 +43,8 @@ function present(m: Document) {
   return {
     id: String(m._id), name: m.name, type: m.type, url: m.url,
     expectedStatus: m.expectedStatus ?? 200, enabled: m.enabled === true,
+    method: m.method ?? "GET", requestBody: m.requestBody ?? null,
+    responseCheck: m.responseCheck ?? "status", responseField: m.responseField ?? null,
     intervalMinutes: m.intervalMinutes ?? null, status: m.status ?? "unknown",
     lastCheckedAt: m.lastCheckedAt ?? null, lastHttpStatus: m.lastHttpStatus ?? null,
     lastLatencyMs: m.lastLatencyMs ?? null, lastError: m.lastError ?? null,
@@ -114,7 +107,11 @@ export async function PATCH(request: NextRequest) {
       const existing = await collection.findOne({ _id: id });
       if (!existing) return reject("Monitor not found", 404);
       // Reset counters and schedule on changed endpoint, preventing stale outage state.
-      const reset = existing.url !== changes.url;
+      const reset = existing.url !== changes.url || (existing.method ?? "GET") !== changes.method ||
+        (existing.requestBody ?? null) !== changes.requestBody ||
+        (existing.responseCheck ?? "status") !== changes.responseCheck ||
+        (existing.responseField ?? null) !== changes.responseField ||
+        (existing.expectedStatus ?? 200) !== changes.expectedStatus;
       if (reset) {
         const openIncident = await db.collection("incidents").findOne({ monitorId: id, status: "OPEN" });
         if (openIncident) return reject("Resolve or disable the existing monitor before changing its URL", 409);
