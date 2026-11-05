@@ -6,6 +6,7 @@ import LogoutButton from "./logout-button";
 const pages = [
  {label:"Overview",href:"/"},
  {label:"Monitors",href:"/monitors"},
+ {label:"Monitoring",href:"/monitoring"},
  {label:"Incidents",href:"/incidents"},
  {label:"Reports",href:"/reports"},
  {label:"Notifications",href:"/notifications"},
