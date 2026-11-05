@@ -40,6 +40,19 @@ export async function POST(request: NextRequest) {
         .findOne({ _id: new ObjectId(id) });
       if (!monitor) return Response.json({ error: "Monitor not found" }, { status: 404 });
       const result = await performCheck(monitor);
+      const testedAt = new Date();
+      // Store only the latest manual test summary, separately from scheduled checks.
+      // No incident state, check schedule, counters or alerts are modified.
+      await db.collection("monitored_services").updateOne(
+        { _id: monitor._id },
+        { $set: { lastManualTest: {
+          healthy: result.healthy, httpStatus: result.httpStatus ?? null,
+          expectedStatus: monitor.expectedStatus ?? 200,
+          latencyMs: result.latencyMs, validation: monitor.responseCheck ?? "status",
+          error: result.error ? result.error.slice(0, 200) : null,
+          testedAt, method: monitor.method ?? "GET",
+        } } },
+      );
       return Response.json({
         monitorId: id, name: monitor.name,
         method: monitor.method ?? "GET",
@@ -49,8 +62,8 @@ export async function POST(request: NextRequest) {
         latencyMs: result.latencyMs,
         validation: monitor.responseCheck ?? "status",
         error: result.error ? result.error.slice(0, 200) : null,
-        testedAt: new Date().toISOString(),
-        persisted: false,
+        testedAt: testedAt.toISOString(),
+        persisted: true,
       }, { headers: { "Cache-Control": "no-store" } });
     });
   } catch (e) {
