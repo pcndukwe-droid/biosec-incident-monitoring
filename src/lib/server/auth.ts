@@ -8,7 +8,8 @@ export const SESSION_COOKIE = "biosec_session";
 const ISSUER = "biosec-incident-monitoring";
 const AUDIENCE = "biosec-admin";
 const SESSION_SECONDS = 60 * 60 * 8;
-const ROUNDS = 210_000;
+// Cloudflare Workers WebCrypto rejects PBKDF2 iteration counts above 100,000.
+const ROUNDS = 100_000;
 
 export type Role = "admin" | "operator" | "viewer";
 export type StoredUser = {
