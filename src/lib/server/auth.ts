@@ -120,7 +120,7 @@ export function sameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get("origin");
   return !!origin && origin === new URL(request.url).origin;
 }
-export async function throttle(db: Db, key: string): Promise<boolean> {
+export async function throttle(db: Db, key: string, maxAttempts = 8): Promise<boolean> {
   const collection = db.collection("auth_rate_limits");
   const bucket = Math.floor(Date.now() / (15 * 60_000));
   const _id = key + ":" + bucket;
@@ -128,5 +128,5 @@ export async function throttle(db: Db, key: string): Promise<boolean> {
     { _id }, { $inc: { count: 1 }, $setOnInsert: { expiresAt: new Date(Date.now() + 30 * 60_000) } },
     { upsert: true, returnDocument: "after" }
   );
-  return Number(item?.count ?? 0) <= 8;
+  return Number(item?.count ?? 0) <= maxAttempts;
 }
