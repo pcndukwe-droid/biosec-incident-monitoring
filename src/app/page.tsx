@@ -1,3 +1,6 @@
+import { currentUser } from "../lib/server/auth";
+import { redirect } from "next/navigation";
+
 const navigation = ["Overview", "Monitors", "Incidents", "Reports", "Notifications", "Settings"];
 
 const setupSteps = [
@@ -5,10 +8,12 @@ const setupSteps = [
   { label: "Scheduled health checks", note: "1-minute scheduler heartbeat; checks disabled", done: true },
   { label: "Database integration", note: "MongoDB Atlas connection not yet configured", done: false },
   { label: "Incident notifications", note: "Support email integration pending", done: false },
-  { label: "Admin authentication", note: "Required before exposing operational data", done: false },
+  { label: "Admin authentication", note: "JWT login implemented; complete first-admin setup", done: true },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const user = await currentUser();
+  if (!user) redirect("/login");
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="Application navigation">
