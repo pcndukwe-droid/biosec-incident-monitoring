@@ -5,9 +5,9 @@ import {
 } from "./server/monitoring-db";
 import { validateMonitorTarget, verifyResponseJson } from "./server/monitor-config";
 
-type CheckResult = { healthy: boolean; latencyMs: number; httpStatus?: number; error?: string };
+export type CheckResult = { healthy: boolean; latencyMs: number; httpStatus?: number; error?: string };
 
-async function performCheck(monitor: StoredMonitor): Promise<CheckResult> {
+export async function performCheck(monitor: StoredMonitor): Promise<CheckResult> {
   const started = Date.now();
   try {
     if (monitor.type !== "https") throw new Error("Unsupported monitor type");
