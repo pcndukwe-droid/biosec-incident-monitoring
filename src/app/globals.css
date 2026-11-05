@@ -84,3 +84,10 @@
 .manual-test-inline strong{color:#183e29;font-size:13px}
 .manual-test-inline .test-failure-reason{color:#b32b2b;overflow-wrap:anywhere}
 .manual-test-inline small{width:100%;color:#758979}
+
+/* Compact endpoint controls and independent persisted manual-test summary */
+.monitor-actions-select{min-width:110px;max-width:135px;width:100%;padding:9px 10px;border-radius:8px;border:1px solid #cedfd2;background:#fff;color:#2c5840;font-size:12px;font-weight:700;cursor:pointer}
+.monitor-actions-select:disabled{opacity:.5;cursor:not-allowed}
+.manual-test-cell{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:135px}
+.manual-test-cell small{font-size:11px;color:#769183;margin:0!important;white-space:nowrap}
+.work-table td:has(.monitor-actions-select){min-width:116px}
