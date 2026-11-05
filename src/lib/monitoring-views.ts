@@ -25,8 +25,14 @@ export async function monitoringOverview() {
     .project({name:1,url:1,status:1,enabled:1,lastCheckedAt:1,lastHttpStatus:1})
     .sort({createdAt:-1}).limit(8).toArray();
   const total=await db.collection("monitored_services").countDocuments({});
+  const enabledCount=await db.collection("monitored_services").countDocuments({enabled:true});
   const open=await db.collection("incidents").countDocuments({status:"OPEN"});
-  return { settings, total, open, monitors:monitors.map(m=>({
+  const runtime=await db.collection("monitoring_runtime").findOne({_id:"scheduler"});
+  const schedulerFresh=runtime?.lastRunAt instanceof Date &&
+    Date.now()-runtime.lastRunAt.getTime()>=0 &&
+    Date.now()-runtime.lastRunAt.getTime()<3*60_000;
+  const monitoringActive=settings.monitoringEnabled && enabledCount>0 && schedulerFresh;
+  return { settings, total, enabledCount, open, monitoringActive, monitors:monitors.map(m=>({
     id:String(m._id),name:String(m.name),url:String(m.url),
     status:String(m.status??"unknown"),enabled:m.enabled===true,
     lastCheckedAt:date(m.lastCheckedAt),lastHttpStatus:m.lastHttpStatus??null,
