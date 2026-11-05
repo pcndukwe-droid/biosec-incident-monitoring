@@ -23,11 +23,18 @@ export async function performCheck(monitor: StoredMonitor): Promise<CheckResult>
     const headers: Record<string,string> = { "User-Agent": "BiosecIncidentMonitor/1.0" };
     if (method === "POST") headers["Content-Type"] = "application/json";
     const response = await fetch(url, {
-      method, redirect: "error", signal: AbortSignal.timeout(10000),
+      method, redirect: "manual", signal: AbortSignal.timeout(10000),
       headers,
       ...(method === "POST" ? { body: monitor.requestBody || "{}" } : {}),
     });
     const latencyMs = Date.now() - started;
+    // Never follow redirects to arbitrary destinations. Treat redirects as a
+    // failed probe even if an administrator configured a 3xx expected status.
+    if (response.status >= 300 && response.status < 400) {
+      void response.body?.cancel();
+      return { healthy: false, httpStatus: response.status, latencyMs,
+        error: "Endpoint redirected (HTTP " + response.status + "); use a final canonical URL" };
+    }
     if (response.status !== (monitor.expectedStatus ?? 200)) {
       void response.body?.cancel();
       return { healthy: false, httpStatus: response.status, latencyMs,
