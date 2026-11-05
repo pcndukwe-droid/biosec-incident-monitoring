@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AdminUsers from "./admin-users";
 
 type FormState = {
   defaultIntervalMinutes: number;
@@ -94,5 +95,7 @@ export default function SettingsPage() {
       <p className="help">Monitoring also requires the Cloudflare <code>MONITORING_ENABLED=true</code> master switch, approved monitors, working database connectivity and an authenticated administrator. Gmail API delivery requires separate OAuth credentials in Cloudflare secrets.</p>
       <button disabled={!ready || saving} type="submit">{saving ? "Saving..." : "Save settings"}</button>
     </form>
+    {ready && <AdminUsers />}
+    <button className="logout-link" type="button" onClick={async()=>{await fetch("/api/auth/logout",{method:"POST"});window.location.assign("/login");}}>Sign out</button>
   </main>;
 }
