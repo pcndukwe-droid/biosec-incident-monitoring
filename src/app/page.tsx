@@ -1,48 +1,44 @@
-import { currentUser } from "../lib/server/auth";
-import { redirect } from "next/navigation";
-import LogoutButton from "./logout-button";
+import Link from "next/link";
+import WorkspaceShell from "./workspace-shell";
+import { monitoringOverview, getReportSummary, reportDataError } from "../lib/monitoring-views";
 
-const navigation = ["Overview", "Monitors", "Incidents", "Reports", "Notifications", "Settings"];
-
+export const dynamic = "force-dynamic";
 const setupSteps = [
-  { label: "Application deployed", note: "Cloudflare Worker + Next.js", done: true },
-  { label: "Scheduled health checks", note: "1-minute scheduler heartbeat; checks disabled", done: true },
-  { label: "Database integration", note: "MongoDB Atlas connection not yet configured", done: false },
-  { label: "Incident notifications", note: "Support email integration pending", done: false },
-  { label: "Admin authentication", note: "JWT login implemented; complete first-admin setup", done: true },
+ {label:"Application deployed",note:"Cloudflare Worker + Next.js",done:true},
+ {label:"Administrator authentication",note:"Secure JWT login and user management",done:true},
+ {label:"Endpoint registration",note:"Public HTTPS monitor registry available",done:true},
+ {label:"Scheduled health checks",note:"One-minute scheduler heartbeat; checks require activation",done:true},
+ {label:"Email delivery",note:"Gmail OAuth credentials and testing required",done:false},
 ];
 
 export default async function Home() {
-  const user = await currentUser();
-  if (!user) redirect("/login");
-  return (
-    <div className="app-shell">
-      <aside className="sidebar" aria-label="Application navigation">
-        <div className="brand"><div className="brand-mark">B<span>.</span></div><div><strong>BIOSEC</strong><small>OPERATIONS</small></div></div>
-        <div className="side-section">WORKSPACE</div>
-        <nav>{navigation.map((item, index) => <span key={item} className={index === 0 ? "nav-item active" : "nav-item"}><span className="nav-dot" />{item === "Settings" ? <a href="/settings" style={{color:"inherit",textDecoration:"none"}}>Settings</a> : item}{item !== "Overview" && item !== "Settings" && <span className="soon">Soon</span>}</span>)}</nav>
-        <div className="sidebar-foot"><span className="connection-dot" />System setup in progress<small>Biosec Solutions Limited</small></div>
-      </aside>
-
-      <main className="content">
-        <header className="topbar"><div className="breadcrumbs">Operations <span>/</span> Overview</div><div className="environment"><span className="connection-dot" /> Production workspace <span style={{ marginLeft: "12px", color: "#52715c" }}>{user.username}</span> <LogoutButton /></div></header>
-        <section className="intro">
-          <div><span className="eyebrow">INFRASTRUCTURE OBSERVABILITY</span><h1>Monitoring overview</h1><p>Monitor service availability, investigate incidents, and keep Biosec infrastructure reliable.</p></div>
-          <div className="setup-label">INITIAL SETUP</div>
-        </section>
-        <div className="notice"><span className="notice-icon">i</span><div><strong>Monitoring is not yet active.</strong><p>This is the initial application shell. No server health checks or incident notifications are running until approved targets, access controls, and persistence are configured.</p></div></div>
-        <section className="stat-grid" aria-label="Platform metrics">
-          <article className="stat"><div className="stat-label">Registered monitors <span className="mini-icon">◫</span></div><div className="stat-value">0</div><div className="stat-note">No services configured</div></article>
-          <article className="stat"><div className="stat-label">Active incidents <span className="mini-icon">!</span></div><div className="stat-value">—</div><div className="stat-note">Incident engine pending</div></article>
-          <article className="stat"><div className="stat-label">Uptime (30 days) <span className="mini-icon">↗</span></div><div className="stat-value">—</div><div className="stat-note">No monitoring data available</div></article>
-          <article className="stat"><div className="stat-label">Check schedule <span className="mini-icon">◷</span></div><div className="stat-value">10 <span className="unit">min</span></div><div className="stat-note">Default; configurable in Settings</div></article>
-        </section>
-        <div className="detail-grid">
-          <section className="panel"><div className="panel-title"><div><h2>Monitored services</h2><p>Availability of your production endpoints and servers</p></div><span className="counter">0 services</span></div><div className="empty-state"><div className="empty-glyph">⌁</div><h3>No monitors configured</h3><p>Once the monitoring engine is connected, authorized Biosec administrators can register server IPs, TCP ports and application health endpoints.</p></div></section>
-          <section className="panel"><div className="panel-title"><div><h2>Platform readiness</h2><p>Implementation progress</p></div></div><div className="steps">{setupSteps.map(step=><div className="step" key={step.label}><span className={step.done ? "step-icon done":"step-icon"}>{step.done ? "✓":"○"}</span><div><strong>{step.label}</strong><p>{step.note}</p></div></div>)}</div></section>
-        </div>
-        <footer className="main-footer"><span>© 2026 Biosec Solutions Limited</span><span>Internal infrastructure platform · <a href="/api/health">Application health</a></span></footer>
-      </main>
-    </div>
-  );
+ let overview:Awaited<ReturnType<typeof monitoringOverview>>|null=null;
+ let summary:Awaited<ReturnType<typeof getReportSummary>>|null=null;
+ try { [overview,summary]=await Promise.all([monitoringOverview(),getReportSummary()]); }
+ catch(error){reportDataError(error,"overview");}
+ const monitoringOn=overview?.settings.monitoringEnabled===true;
+ return <WorkspaceShell section="Overview">
+   <section className="intro">
+     <div><span className="eyebrow">INFRASTRUCTURE OBSERVABILITY</span><h1>Monitoring overview</h1><p>Monitor service availability, investigate incidents, and keep Biosec infrastructure reliable.</p></div>
+     <div className="setup-label">{monitoringOn?"CONFIGURED":"INITIAL SETUP"}</div>
+   </section>
+   {!overview?<div className="settings-message">Monitoring data could not be loaded. Check MongoDB connectivity.</div>:
+     !monitoringOn?<div className="notice"><span className="notice-icon">i</span><div><strong>Monitoring is not yet active.</strong><p>You may register approved endpoints now. Scheduled health checks require both the database monitoring toggle and the Cloudflare master switch to be enabled after configuration and testing.</p></div></div>:
+     <div className="notice"><span className="notice-icon">i</span><div><strong>Monitoring enabled in application settings.</strong><p>Actual scheduled execution also depends on the Cloudflare MONITORING_ENABLED master switch and valid approved monitors.</p></div></div>}
+   <section className="stat-grid" aria-label="Platform metrics">
+     <article className="stat"><div className="stat-label">Registered monitors <span className="mini-icon">◫</span></div><div className="stat-value">{overview?.total??"—"}</div><div className="stat-note">Configured endpoints</div></article>
+     <article className="stat"><div className="stat-label">Active incidents <span className="mini-icon">!</span></div><div className="stat-value">{overview?.open??"—"}</div><div className="stat-note">Open incident records</div></article>
+     <article className="stat"><div className="stat-label">Health checks (30 days) <span className="mini-icon">↗</span></div><div className="stat-value">{summary?.checkCount??"—"}</div><div className="stat-note">Observed checks</div></article>
+     <article className="stat"><div className="stat-label">Check schedule <span className="mini-icon">◷</span></div><div className="stat-value">{overview?.settings.defaultIntervalMinutes??10} <span className="unit">min</span></div><div className="stat-note">Default; configurable in Settings</div></article>
+   </section>
+   <div className="detail-grid">
+     <section className="panel"><div className="panel-title"><div><h2>Monitored services</h2><p>Availability of registered production endpoints</p></div><Link href="/monitors" className="counter">Manage monitors</Link></div>
+     {overview?.monitors.length?<div className="overview-services">{overview.monitors.map(m=><div key={m.id} className="overview-service">
+       <div><strong>{m.name}</strong><small>{m.url}</small></div>
+       <span className={"status-chip "+m.status}>{m.enabled?m.status.toUpperCase():"PAUSED"}</span>
+     </div>)}</div>:<div className="empty-state"><div className="empty-glyph">⌁</div><h3>No monitors configured</h3><p>Register an authorized public HTTPS application or API health endpoint.</p><Link className="primary-action" href="/monitors">Add first endpoint</Link></div>}
+     </section>
+     <section className="panel"><div className="panel-title"><div><h2>Platform readiness</h2><p>Implementation progress</p></div></div><div className="steps">{setupSteps.map(step=><div className="step" key={step.label}><span className={step.done?"step-icon done":"step-icon"}>{step.done?"✓":"○"}</span><div><strong>{step.label}</strong><p>{step.note}</p></div></div>)}</div></section>
+   </div>
+ </WorkspaceShell>;
 }
