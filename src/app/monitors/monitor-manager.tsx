@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useState, type FormEvent } from "react";
 
 type Monitor = {
  id:string; name:string; url:string; type:string; expectedStatus:number; enabled:boolean;
@@ -26,6 +26,8 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
  const [success,setSuccess]=useState("");
  const [testingId,setTestingId]=useState<string|null>(null);
  const [testResults,setTestResults]=useState<Record<string,ManualTestResult>>({});
+ const [testErrors,setTestErrors]=useState<Record<string,string>>({});
+ const [expandedTest,setExpandedTest]=useState<string|null>(null);
  async function load() {
    const res=await fetch("/api/admin/monitors",{cache:"no-store"});
    const data=await res.json();
@@ -65,7 +67,9 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
  }
  async function testEndpoint(m:Monitor){
    if(testingId)return;
-   setTestingId(m.id);setError("");setSuccess("");
+   setTestingId(m.id);setExpandedTest(m.id);setError("");setSuccess("");
+   setTestErrors(prev=>({...prev,[m.id]:""}));
+   setTestResults(prev=>{const next={...prev};delete next[m.id];return next;});
    try{
      const response=await fetch("/api/admin/monitors/test",{
        method:"POST",headers:{"Content-Type":"application/json"},
@@ -76,7 +80,7 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
      try{payload=JSON.parse(raw) as Record<string,unknown>;}catch{}
      if(!response.ok)throw Error(typeof payload.error==="string"?payload.error:"Manual test failed (HTTP "+response.status+")");
      setTestResults(prev=>({...prev,[m.id]:payload as unknown as ManualTestResult}));
-   }catch(e){setError(e instanceof Error?e.message:"Unable to test endpoint");}
+   }catch(e){setTestErrors(prev=>({...prev,[m.id]:e instanceof Error?e.message:"Unable to test endpoint"}));}
    finally{setTestingId(null);}
  }
  async function remove(m:Monitor){
@@ -116,29 +120,30 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
    {loading?<p className="muted">Loading monitors...</p>:items.length===0?
      <div className="workspace-empty"><h3>No endpoints registered yet</h3><p>Add your first approved public HTTPS health endpoint to begin configuring monitoring.</p></div>:
      <div className="table-wrap"><table className="work-table"><thead><tr><th>Service</th><th>Method</th><th>Endpoint</th><th>Status</th><th>Schedule</th><th>Last check</th><th>Actions</th></tr></thead>
-       <tbody>{items.map(m=><tr key={m.id}>
-         <td><strong>{m.name}</strong><small>{m.enabled?"Enabled":"Paused"}</small></td>
-         <td><strong>{m.method??"GET"}</strong></td><td className="url-cell" title={m.url}>{m.url}</td>
-         <td><span className={"status-chip "+m.status}>{m.status.toUpperCase()}</span></td>
-         <td>{m.intervalMinutes??"Default"} min</td>
-         <td>{m.lastCheckedAt?new Date(m.lastCheckedAt).toLocaleString():"Not checked"}</td>
-         <td>{canEdit?<div className="table-actions"><button disabled={busy||testingId!==null} onClick={()=>testEndpoint(m)}>{testingId===m.id?"Testing...":"Test"}</button><button disabled={busy} onClick={()=>startEdit(m)}>Edit</button><button disabled={busy} onClick={()=>toggle(m)}>{m.enabled?"Pause":"Enable"}</button><button disabled={busy} onClick={()=>remove(m)}>Delete</button></div>:"View only"}</td>
-       </tr>)}</tbody></table>
-       {Object.keys(testResults).length>0&&<section className="manual-test-results" aria-label="Manual test results">
-         <h3>Manual test results</h3>
-         <p>One-time checks only. These results do not update scheduled monitoring status, open incidents or send alerts.</p>
-         {items.filter(m=>testResults[m.id]).map(m=>{
-           const t=testResults[m.id];
-           return <div className="manual-test-result" key={m.id}>
-             <strong>{m.name}</strong>
-             <span className={"status-chip "+(t.healthy?"up":"down")}>{t.healthy?"PASS":"FAIL"}</span>
-             <span>HTTP: {t.httpStatus??"No response"} (expected {t.expectedStatus})</span>
-             <span>Time: {t.latencyMs} ms</span>
-             <span>Validation: {t.validation}</span>
-             <span>{new Date(t.testedAt).toLocaleString()}</span>
-             {t.error&&<span className="test-failure-reason">Reason: {t.error}</span>}
-           </div>;
-         })}
-       </section>}</div>}
+       <tbody>{items.map(m=><Fragment key={m.id}>
+         <tr>
+           <td><strong>{m.name}</strong><small>{m.enabled?"Enabled":"Paused"}</small></td>
+           <td><strong>{m.method??"GET"}</strong></td><td className="url-cell" title={m.url}>{m.url}</td>
+           <td><span className={"status-chip "+m.status}>{m.status.toUpperCase()}</span></td>
+           <td>{m.intervalMinutes??"Default"} min</td>
+           <td>{m.lastCheckedAt?new Date(m.lastCheckedAt).toLocaleString():"Not checked"}</td>
+           <td>{canEdit?<div className="table-actions"><button disabled={busy||testingId!==null} onClick={()=>testEndpoint(m)}>{testingId===m.id?"Testing...":"Test"}</button><button disabled={busy} onClick={()=>startEdit(m)}>Edit</button><button disabled={busy} onClick={()=>toggle(m)}>{m.enabled?"Pause":"Enable"}</button><button disabled={busy} onClick={()=>remove(m)}>Delete</button></div>:"View only"}</td>
+         </tr>
+         {expandedTest===m.id&&<tr className="manual-test-inline-row"><td colSpan={7}>
+           <div className="manual-test-inline" role="status" aria-live="polite">
+             {testingId===m.id?<><strong>Testing {m.name}…</strong><span>Sending a one-time {m.method??"GET"} request.</span></>:
+             testErrors[m.id]?<><strong className="test-failure-reason">Test could not complete</strong><span>{testErrors[m.id]}</span></>:
+             testResults[m.id]?<><strong>{m.name}</strong>
+               <span className={"status-chip "+(testResults[m.id].healthy?"up":"down")}>{testResults[m.id].healthy?"PASS":"FAIL"}</span>
+               <span>HTTP: {testResults[m.id].httpStatus??"No response"} (expected {testResults[m.id].expectedStatus})</span>
+               <span>Response time: {testResults[m.id].latencyMs} ms</span>
+               <span>Validation: {testResults[m.id].validation}</span>
+               {testResults[m.id].error&&<span className="test-failure-reason">Reason: {testResults[m.id].error}</span>}
+               <small>This test does not change scheduled monitoring or send alerts.</small></>:
+             <span>No test result returned.</span>}
+           </div>
+         </td></tr>}
+       </Fragment>)}</tbody></table></div>}
+
  </section>;
 }
