@@ -3,14 +3,6 @@ import WorkspaceShell from "./workspace-shell";
 import { monitoringOverview, getReportSummary, reportDataError } from "../lib/monitoring-views";
 
 export const dynamic = "force-dynamic";
-const setupSteps = [
- {label:"Application deployed",note:"Cloudflare Worker + Next.js",done:true},
- {label:"Administrator authentication",note:"Secure JWT login and user management",done:true},
- {label:"Endpoint registration",note:"Public HTTPS monitor registry available",done:true},
- {label:"Scheduled health checks",note:"One-minute scheduler heartbeat; checks require activation",done:true},
- {label:"Email delivery",note:"Gmail OAuth credentials and testing required",done:false},
-];
-
 export default async function Home() {
  let overview:Awaited<ReturnType<typeof monitoringOverview>>|null=null;
  let summary:Awaited<ReturnType<typeof getReportSummary>>|null=null;
@@ -31,14 +23,14 @@ export default async function Home() {
      <article className="stat"><div className="stat-label">Health checks (30 days) <span className="mini-icon">↗</span></div><div className="stat-value">{summary?.checkCount??"—"}</div><div className="stat-note">Observed checks</div></article>
      <article className="stat"><div className="stat-label">Check schedule <span className="mini-icon">◷</span></div><div className="stat-value">{overview?.settings.defaultIntervalMinutes??10} <span className="unit">min</span></div><div className="stat-note">Default; configurable in Settings</div></article>
    </section>
-   <div className="detail-grid">
+   <div className="overview-monitor-panel">
      <section className="panel"><div className="panel-title"><div><h2>Monitored services</h2><p>Availability of registered production endpoints</p></div><Link href="/monitors" className="counter">Manage monitors</Link></div>
      {overview?.monitors.length?<div className="overview-services">{overview.monitors.map(m=><div key={m.id} className="overview-service">
        <div><strong>{m.name}</strong><small>{m.url}</small></div>
        <span className={"status-chip "+m.status}>{!m.enabled?"PAUSED":!m.lastCheckedAt?"Awaiting First Check":m.status==="unknown"?"Verifying":m.status.toUpperCase()}</span>
      </div>)}</div>:<div className="empty-state"><div className="empty-glyph">⌁</div><h3>No monitors configured</h3><p>Register an authorized public HTTPS application or API health endpoint.</p><Link className="primary-action" href="/monitors">Add first endpoint</Link></div>}
      </section>
-     <section className="panel"><div className="panel-title"><div><h2>Platform readiness</h2><p>Implementation progress</p></div></div><div className="steps">{setupSteps.map(step=><div className="step" key={step.label}><span className={step.done?"step-icon done":"step-icon"}>{step.done?"✓":"○"}</span><div><strong>{step.label}</strong><p>{step.note}</p></div></div>)}</div></section>
+     
    </div>
  </WorkspaceShell>;
 }
