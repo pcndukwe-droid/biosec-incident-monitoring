@@ -88,7 +88,7 @@ export type StoredMonitor = Document & Partial<MonitorFields> & {
   enabled: boolean;
   intervalMinutes?: number;
   nextCheckAt?: Date;
-  leaseUntil?: Date;
+  leaseUntil?: Date | null;
   consecutiveFailures?: number;
   consecutiveSuccesses?: number;
   status?: "unknown" | "up" | "down";
