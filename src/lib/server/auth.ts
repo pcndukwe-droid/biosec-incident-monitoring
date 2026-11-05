@@ -96,9 +96,11 @@ export async function findSession(
   try {
     const { payload } = await jwtVerify(token, signingKey(env), { issuer: ISSUER, audience: AUDIENCE });
     if (typeof payload.sub !== "string" || !ObjectId.isValid(payload.sub) || typeof payload.ver !== "number") return null;
+    const userId = payload.sub;
+    const sessionVersion = payload.ver;
     return withAuthDb(env, async db => {
-      const user = await db.collection<StoredUser>("admin_users").findOne({ _id: new ObjectId(payload.sub) });
-      if (!user || !user.enabled || user.sessionVersion !== payload.ver) return null;
+      const user = await db.collection<StoredUser>("admin_users").findOne({ _id: new ObjectId(userId) });
+      if (!user || !user.enabled || user.sessionVersion !== sessionVersion) return null;
       return publicUser(user);
     });
   } catch { return null; }
