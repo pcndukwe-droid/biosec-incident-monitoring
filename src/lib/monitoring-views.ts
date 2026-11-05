@@ -27,7 +27,7 @@ export async function monitoringOverview() {
   const total=await db.collection("monitored_services").countDocuments({});
   const enabledCount=await db.collection("monitored_services").countDocuments({enabled:true});
   const open=await db.collection("incidents").countDocuments({status:"OPEN"});
-  const runtime=await db.collection("monitoring_runtime").findOne({_id:"scheduler"});
+  const runtime=await db.collection<{ _id: string; lastRunAt: Date; lastProcessedCount: number }>("monitoring_runtime").findOne({_id:"scheduler"});
   const schedulerFresh=runtime?.lastRunAt instanceof Date &&
     Date.now()-runtime.lastRunAt.getTime()>=0 &&
     Date.now()-runtime.lastRunAt.getTime()<3*60_000;
