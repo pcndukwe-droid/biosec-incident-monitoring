@@ -27,7 +27,7 @@ export default async function MonitoringPage(){
       <td><strong>{m.service}</strong><small className="monitor-url">{m.url}</small></td>
       <td>{m.method}</td>
       <td>{m.enabled?"Enabled":"Paused"}</td>
-      <td><span className={"status-chip "+(m.lastCheckedAt?m.status:"unknown")}>{!m.enabled?"PAUSED":!m.lastCheckedAt?"NOT STARTED":m.status.toUpperCase()}</span></td>
+      <td><span className={"status-chip "+(m.lastCheckedAt?m.status:"unknown")}>{!m.enabled?"PAUSED":!m.lastCheckedAt?"Awaiting First Check":m.status==="unknown"?"Verifying":m.status.toUpperCase()}</span></td>
       <td>{stamp(m.lastCheckedAt)}</td>
       <td>{m.lastHttpStatus??"—"}</td>
       <td>{m.lastLatencyMs===null?"—":m.lastLatencyMs+" ms"}</td>
