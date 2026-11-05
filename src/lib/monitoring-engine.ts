@@ -3,27 +3,50 @@ import {
   ensureIndexes, normalizeSettings, readSettings, withMonitoringDb,
   type MonitoringEnv, type MonitoringSettings, type StoredMonitor,
 } from "./server/monitoring-db";
+import { validateMonitorTarget, verifyResponseJson } from "./server/monitor-config";
 
 type CheckResult = { healthy: boolean; latencyMs: number; httpStatus?: number; error?: string };
-
-function validateTarget(target: StoredMonitor): URL {
-  if (target.type !== "https" || !target.url) throw new Error("Unsupported monitor type");
-  const url = new URL(target.url);
-  if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443")) {
-    throw new Error("Only approved HTTPS endpoints on port 443 are allowed");
-  }
-  return url;
-}
 
 async function performCheck(monitor: StoredMonitor): Promise<CheckResult> {
   const started = Date.now();
   try {
-    const url = validateTarget(monitor);
+    if (monitor.type !== "https") throw new Error("Unsupported monitor type");
+    // Revalidate at execution time: existing database records must obey the same
+    // public HTTPS restrictions as new form submissions.
+    const url = validateMonitorTarget(monitor.url);
+    const method = monitor.method ?? "GET";
+    if (method !== "GET" && method !== "POST") throw new Error("Unsupported HTTP method");
+    if (method === "GET" && monitor.requestBody) throw new Error("GET monitors cannot include a request body");
+    const check = monitor.responseCheck ?? "status";
+    if (!["status","json-nonempty","json-field"].includes(check)) throw new Error("Invalid response check");
+    if (check === "json-field" && !monitor.responseField) throw new Error("Missing JSON response field");
+    const headers: Record<string,string> = { "User-Agent": "BiosecIncidentMonitor/1.0" };
+    if (method === "POST") headers["Content-Type"] = "application/json";
     const response = await fetch(url, {
-      method: "GET", redirect: "error", signal: AbortSignal.timeout(10000),
-      headers: { "User-Agent": "BiosecIncidentMonitor/1.0" },
+      method, redirect: "error", signal: AbortSignal.timeout(10000),
+      headers,
+      ...(method === "POST" ? { body: monitor.requestBody || "{}" } : {}),
     });
-    return { healthy: response.status === (monitor.expectedStatus ?? 200), httpStatus: response.status, latencyMs: Date.now() - started };
+    const latencyMs = Date.now() - started;
+    if (response.status !== (monitor.expectedStatus ?? 200)) {
+      void response.body?.cancel();
+      return { healthy: false, httpStatus: response.status, latencyMs,
+        error: "Unexpected HTTP status: " + response.status };
+    }
+    if (check === "status") {
+      void response.body?.cancel();
+      return { healthy: true, httpStatus: response.status, latencyMs };
+    }
+    // Avoid storing response content (including personal or pricing data).
+    const text = await response.text();
+    if (text.length > 65536) return { healthy:false, httpStatus:response.status, latencyMs,
+      error:"Response exceeds 64 KB JSON validation limit" };
+    let payload: unknown;
+    try { payload = JSON.parse(text); }
+    catch { return { healthy:false, httpStatus:response.status, latencyMs, error:"Expected valid JSON response" }; }
+    const healthy = verifyResponseJson(payload,check,monitor.responseField ?? null);
+    return { healthy, httpStatus: response.status, latencyMs: Date.now()-started,
+      ...(healthy ? {} : { error: "JSON response validation failed" }) };
   } catch (error) {
     return { healthy: false, latencyMs: Date.now() - started, error: error instanceof Error ? error.message : "Unknown error" };
   }
