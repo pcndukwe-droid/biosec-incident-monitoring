@@ -20,8 +20,20 @@ export default function LoginPage() {
         body: JSON.stringify({ username: username.toLowerCase().trim(), password, ...(setup ? { setupToken } : {}) }),
         cache: "no-store",
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error((payload.error ?? "Unable to authenticate") + (payload.diagnosticId ? " (Reference: " + payload.diagnosticId + ")" : ""));
+
+      const raw = await response.text();
+      let payload: { error?: string; diagnosticId?: string } = {};
+      try { if (raw) payload = JSON.parse(raw) as typeof payload; } catch { /* An upstream HTML or empty response is not JSON. */ }
+      if (!response.ok) {
+        const fallback = response.status === 503 || response.status >= 500
+          ? "Authentication service returned a server error"
+          : "Unable to authenticate";
+        throw new Error((payload.error ?? fallback) +
+          " (HTTP " + response.status + ")" +
+          (payload.diagnosticId ? " (Reference: " + payload.diagnosticId + ")" : ""));
+      }
+      if (!raw) throw new Error("Authentication service returned an empty response. Check Cloudflare Worker logs.");
+
       router.replace("/");
       router.refresh();
     } catch (err) {
