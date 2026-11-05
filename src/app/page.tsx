@@ -16,15 +16,15 @@ export default async function Home() {
  let summary:Awaited<ReturnType<typeof getReportSummary>>|null=null;
  try { [overview,summary]=await Promise.all([monitoringOverview(),getReportSummary()]); }
  catch(error){reportDataError(error,"overview");}
- const monitoringOn=overview?.settings.monitoringEnabled===true;
+ const monitoringOn=overview?.monitoringActive===true;
  return <WorkspaceShell section="Overview">
    <section className="intro">
      <div><span className="eyebrow">INFRASTRUCTURE OBSERVABILITY</span><h1>Monitoring overview</h1><p>Monitor service availability, investigate incidents, and keep Biosec infrastructure reliable.</p></div>
      <div className="setup-label">{monitoringOn?"CONFIGURED":"INITIAL SETUP"}</div>
    </section>
    {!overview?<div className="settings-message">Monitoring data could not be loaded. Check MongoDB connectivity.</div>:
-     !monitoringOn?<div className="notice"><span className="notice-icon">i</span><div><strong>Monitoring is not yet active.</strong><p>You may register approved endpoints now. Scheduled health checks require both the database monitoring toggle and the Cloudflare master switch to be enabled after configuration and testing.</p></div></div>:
-     <div className="notice"><span className="notice-icon">i</span><div><strong>Monitoring enabled in application settings.</strong><p>Actual scheduled execution also depends on the Cloudflare MONITORING_ENABLED master switch and valid approved monitors.</p></div></div>}
+     monitoringOn?<div className="notice"><span className="notice-icon">✓</span><div><strong>Endpoint Monitoring is Active</strong><p>The system is automatically monitoring your configured application URLs and API endpoints. Health checks are running at the scheduled intervals, with outages, recovery events, and incidents being tracked and recorded.</p></div></div>:
+     <div className="notice"><span className="notice-icon">i</span><div><strong>Endpoint Monitoring is Currently Disabled</strong><p>You can add and configure the application URLs and API endpoints you wish to monitor. Once configuration is complete, enable monitoring in Settings to begin automatic health checks, outage detection, and incident tracking.</p></div></div>}
    <section className="stat-grid" aria-label="Platform metrics">
      <article className="stat"><div className="stat-label">Registered monitors <span className="mini-icon">◫</span></div><div className="stat-value">{overview?.total??"—"}</div><div className="stat-note">Configured endpoints</div></article>
      <article className="stat"><div className="stat-label">Active incidents <span className="mini-icon">!</span></div><div className="stat-value">{overview?.open??"—"}</div><div className="stat-note">Open incident records</div></article>
