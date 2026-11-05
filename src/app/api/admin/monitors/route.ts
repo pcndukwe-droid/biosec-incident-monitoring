@@ -49,6 +49,7 @@ function present(m: Document) {
     lastCheckedAt: m.lastCheckedAt ?? null, lastHttpStatus: m.lastHttpStatus ?? null,
     lastLatencyMs: m.lastLatencyMs ?? null, lastError: m.lastError ?? null,
     nextCheckAt: m.nextCheckAt ?? null, createdAt: m.createdAt ?? null,
+    lastManualTest: m.lastManualTest ?? null,
   };
 }
 
