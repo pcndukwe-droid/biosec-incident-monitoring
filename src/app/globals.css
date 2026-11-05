@@ -71,3 +71,10 @@
 .monitor-form select,.monitor-form textarea{width:100%;min-width:0;padding:12px;border-radius:8px;border:1px solid #c9dece;background:#fff;color:#203e2d;font:inherit}
 .monitor-form textarea{resize:vertical;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.6}
 .monitor-form .monitor-json-label{margin-top:16px;display:flex;flex-direction:column;gap:9px;font-size:12px;font-weight:700;color:#345641}
+
+.manual-test-results{margin:18px 0 0;padding:18px;background:#f8fbf9;border:1px solid #d9e8dc;border-radius:10px}
+.manual-test-results h3{font-size:16px;color:#244431;margin:0 0 4px}
+.manual-test-results>p{font-size:12px;margin:4px 0 14px}
+.manual-test-result{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:13px 0;border-top:1px solid #e1ebe4;color:#4a6a55;font-size:12px}
+.manual-test-result strong{font-size:13px;color:#203b29}
+.manual-test-result .test-failure-reason{color:#b02a2a;flex-basis:100%;overflow-wrap:anywhere}
