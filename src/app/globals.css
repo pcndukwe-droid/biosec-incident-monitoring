@@ -91,3 +91,26 @@
 .manual-test-cell{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:135px}
 .manual-test-cell small{font-size:11px;color:#769183;margin:0!important;white-space:nowrap}
 .work-table td:has(.monitor-actions-select){min-width:116px}
+
+/* Refined custom endpoint actions — no browser-native select styling */
+.monitor-actions-cell{position:relative;min-width:130px;vertical-align:middle!important}
+.monitor-actions-cell.action-open-cell{z-index:25}
+.monitor-action-menu{position:relative;display:inline-block;min-width:108px}
+.monitor-action-trigger{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 11px;border-radius:9px;border:1px solid #cfe1d5;background:#f8fcf9;color:#245639;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,box-shadow .15s}
+.monitor-action-trigger:hover,.monitor-action-menu.is-open .monitor-action-trigger{background:#eef8f0;border-color:#82c79b;box-shadow:0 0 0 2px rgba(13,154,66,.05)}
+.monitor-action-trigger:focus-visible,.monitor-action-item:focus-visible{outline:2px solid #149647;outline-offset:2px}
+.monitor-action-trigger:disabled{opacity:.55;cursor:not-allowed}
+.monitor-action-dots{letter-spacing:-1px;font-size:12px;color:#099947}
+.monitor-action-chevron{font-size:17px;line-height:10px;color:#73917e;margin-left:2px;transform:translateY(-2px)}
+.monitor-action-list{position:absolute;right:0;top:calc(100% + 7px);width:205px;padding:7px;background:white;border:1px solid #d7e5dc;border-radius:12px;box-shadow:0 13px 35px rgba(18,52,33,.16);z-index:100}
+.monitor-action-item{display:flex;align-items:center;width:100%;gap:10px;border:0;background:transparent;color:#2b5039;font-size:12px;font-weight:600;text-align:left;padding:11px 12px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.monitor-action-item:hover{background:#eff8f2;color:#126a35}
+.monitor-action-item:before{display:inline-flex;align-items:center;justify-content:center;min-width:18px;font-size:15px;color:#338d57}
+.monitor-action-test:before{content:"↻"}
+.monitor-action-edit:before{content:"✎"}
+.monitor-action-toggle:before{content:"Ⅱ";font-size:12px}
+.monitor-action-delete:before{content:"×";font-size:19px;color:#c44242}
+.monitor-action-item.monitor-action-delete{color:#a73535}
+.monitor-action-item.monitor-action-delete:hover{background:#fff0f0;color:#9e2929}
+.monitor-action-separator{height:1px;background:#e8f0eb;margin:5px 4px}
+.table-wrap:has(.monitor-action-menu.is-open){overflow:visible}
