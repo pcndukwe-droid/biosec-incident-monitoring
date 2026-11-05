@@ -54,3 +54,5 @@ The session cookie is signed with HS256, expires after eight hours, and stores n
 **Do not add a username/password as Cloudflare plaintext variables.** Usernames and salted password hashes live in MongoDB; only the JWT signing key and MongoDB connection URI live in Cloudflare Secrets. No shared default credentials exist.
 
 Monitor execution remains disabled until `MONITORING_ENABLED=true` and the database setting `monitoringEnabled=true` have both been explicitly enabled. Confirm alert delivery and test an approved endpoint first.
+
+<!-- Deployment refresh: includes the scheduler eligibility fix for previously paused endpoints. -->
