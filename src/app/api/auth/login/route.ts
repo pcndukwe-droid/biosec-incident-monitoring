@@ -13,16 +13,18 @@ export async function POST(request: NextRequest) {
     input.username.length > 40 || input.password.length > 128) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
+  const username = input.username.trim().toLowerCase();
+  const password = input.password;
   const env = await getAuthEnv();
   try {
     const user = await withAuthDb(env, async db => {
       const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
-      const key = "account:" + ip + ":" + input.username.trim().toLowerCase();
+      const key = "account:" + ip + ":" + username;
       if (!(await throttle(db, key)) || !(await throttle(db, "ip:" + ip, 30))) return null;
       const found = await db.collection<StoredUser>("admin_users").findOne({
-        username: input.username.trim().toLowerCase(), enabled: true,
+        username: username, enabled: true,
       });
-      if (!found || !(await verifyPassword(input.password as string, found.passwordHash))) return null;
+      if (!found || !(await verifyPassword(password, found.passwordHash))) return null;
       return found;
     });
     if (!user) return NextResponse.json({ error: "Invalid credentials or login temporarily restricted" }, { status: 401 });
