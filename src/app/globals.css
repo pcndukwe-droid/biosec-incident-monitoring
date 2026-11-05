@@ -78,3 +78,9 @@
 .manual-test-result{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:13px 0;border-top:1px solid #e1ebe4;color:#4a6a55;font-size:12px}
 .manual-test-result strong{font-size:13px;color:#203b29}
 .manual-test-result .test-failure-reason{color:#b02a2a;flex-basis:100%;overflow-wrap:anywhere}
+
+.manual-test-inline-row td{padding:0 12px 14px!important;background:#f8fbf9}
+.manual-test-inline{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:14px 16px;border:1px solid #d5e8dc;border-radius:10px;font-size:12px;color:#375a44;background:#f3faf5}
+.manual-test-inline strong{color:#183e29;font-size:13px}
+.manual-test-inline .test-failure-reason{color:#b32b2b;overflow-wrap:anywhere}
+.manual-test-inline small{width:100%;color:#758979}
