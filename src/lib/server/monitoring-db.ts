@@ -1,4 +1,5 @@
 import { MongoClient, type Db, type Document } from "mongodb";
+import type { MonitorFields } from "./monitor-config";
 
 export type MonitoringEnv = {
   MONGODB_URI?: string;
@@ -78,7 +79,7 @@ export async function readSettings(db: Db): Promise<MonitoringSettings> {
   return normalizeSettings(raw);
 }
 
-export type StoredMonitor = Document & {
+export type StoredMonitor = Document & Partial<MonitorFields> & {
   _id: import("mongodb").ObjectId;
   name: string;
   type: "https";
