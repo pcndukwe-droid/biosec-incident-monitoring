@@ -121,7 +121,7 @@ export function sameOrigin(request: NextRequest): boolean {
   return !!origin && origin === new URL(request.url).origin;
 }
 export async function throttle(db: Db, key: string, maxAttempts = 8): Promise<boolean> {
-  const collection = db.collection("auth_rate_limits");
+  const collection = db.collection<{ _id: string; count: number; expiresAt: Date }>("auth_rate_limits");
   const bucket = Math.floor(Date.now() / (15 * 60_000));
   const _id = key + ":" + bucket;
   const item = await collection.findOneAndUpdate(
