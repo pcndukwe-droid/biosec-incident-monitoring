@@ -27,7 +27,6 @@ Protected UI: `/login` (JWT username/password), `/settings` (admin-only). The br
 Required production Worker bindings:
 - `MONGODB_URI` — MongoDB connection string; **Secret**, not committed.
 - `JWT_SECRET` — **Secret**, at least 32 random bytes (for example, generate with `openssl rand -hex 32`).
-- `AUTH_BOOTSTRAP_TOKEN` — **Secret**, separately generated with `openssl rand -hex 32`; remove after creating the initial administrator.
 - `MONITORING_ENABLED` — master runtime kill switch; set to `true` **only after approved targets, secure settings, network access, alert delivery, and test checks have been verified**.
 
 Optional Gmail API bindings (all credentials must be Cloudflare secrets):
@@ -38,23 +37,20 @@ Optional Gmail API bindings (all credentials must be Cloudflare secrets):
 
 The monitoring_settings document must have `monitoringEnabled: true` in addition to the master switch. Email delivery requires `emailEnabled: true`, valid alert recipients, and Gmail OAuth credentials.
 
-**Security and operational readiness:** This is not yet production-ready. The dashboard uses internal JWT authentication; validate the first administrator bootstrap and user management in production before enabling monitoring. Monitor registration and public TCP checks are not yet implemented. MongoDB Atlas connectivity and mail sending have not been tested from the production Worker. Rotate credentials exposed in screenshots or chat. Never add secrets to GitHub. The monitoring engine currently supports only approved HTTPS checks; raw TCP checks require a separately reviewed implementation.
+**Security and operational readiness:** This is not yet production-ready. The dashboard uses internal JWT authentication; validate administrator login and user management in production before enabling monitoring. Monitor registration and public TCP checks are not yet implemented. MongoDB Atlas connectivity and mail sending have not been tested from the production Worker. Rotate credentials exposed in screenshots or chat. Never add secrets to GitHub. The monitoring engine currently supports only approved HTTPS checks; raw TCP checks require a separately reviewed implementation.
 
 Incident documents are retained; health checks expire after 90 days. Every confirmed outage gets an OPENED alert; recovery gets a RECOVERED alert; configured interval reminders are emitted while the incident is open. New defaults: 10-minute routine checks, 1-minute checks after the first failure and throughout an incident, 3 failures to open an incident, 2 successes to recover, and 5-minute reminders. All are editable in Settings.
 
 The default check interval is **10 minutes (6 checks/hour)**. This is a default for newly configured monitors, not the Cloudflare Cron interval (which remains a 1-minute wake-up). Critical monitors can use shorter per-monitor intervals. After the first failure detected on a routine check, 1-minute confirmation checks typically confirm three consecutive failures about two minutes later (subject to scheduler/processing delays). The initial failure may still go undetected until the next routine check.
 
-## Built-in administrator login (replaces Cloudflare Access)
+## Administrator login and user management
 
-1. Configure `MONGODB_URI`, `JWT_SECRET` and `AUTH_BOOTSTRAP_TOKEN` as Cloudflare **Secrets**. Never share their values or commit them.
-2. Rotate any exposed MongoDB password and create a least-privilege database user with access only to `biosec_monitoring`. Confirm Atlas network access from Cloudflare.
-3. Deploy the `main` branch and verify the build is **Ready**.
-4. Visit `/login`, select **First-time setup**, enter the bootstrap token and create a unique administrator username and password (minimum 12 characters). Initialization is one-time only, enforced with a MongoDB singleton.
-5. After successful setup, **remove `AUTH_BOOTSTRAP_TOKEN` from Cloudflare**. Sign in normally using the new username/password.
-6. Open **Settings → User accounts and permissions** to add staff, change roles, reset passwords or disable accounts. Settings modification and account management require the **admin** role. The dashboard is available to logged-in users with viewer/operator/admin roles.
+The one-time public administrator bootstrap flow has been retired now that the initial Biosec administrator has been created. The public `/login` page contains only username/password sign-in, and `/api/auth/bootstrap` is removed. New accounts are created only by an authenticated administrator in **Settings → User accounts and permissions**.
+
+Cloudflare production secrets: `MONGODB_URI` and `JWT_SECRET`. Remove the no-longer-needed `AUTH_BOOTSTRAP_TOKEN` secret from the Cloudflare dashboard after verifying an existing admin account works. Keep `JWT_SECRET`: removing or replacing it invalidates login sessions.
 
 The session cookie is signed with HS256, expires after eight hours, and stores no password. Logout clears it; any account update increments `sessionVersion` to invalidate existing tokens. The login endpoint throttles repeated attempts using MongoDB.
 
-**Do not add a username/password as Cloudflare plaintext variables.** Usernames and salted password hashes live in MongoDB; only the one-time setup token and signing key live in Cloudflare Secrets. No shared default credentials exist.
+**Do not add a username/password as Cloudflare plaintext variables.** Usernames and salted password hashes live in MongoDB; only the JWT signing key and MongoDB connection URI live in Cloudflare Secrets. No shared default credentials exist.
 
 Monitor execution remains disabled until `MONITORING_ENABLED=true` and the database setting `monitoringEnabled=true` have both been explicitly enabled. Confirm alert delivery and test an approved endpoint first.
