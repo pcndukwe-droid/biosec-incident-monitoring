@@ -114,3 +114,8 @@
 .monitor-action-item.monitor-action-delete:hover{background:#fff0f0;color:#9e2929}
 .monitor-action-separator{height:1px;background:#e8f0eb;margin:5px 4px}
 .table-wrap:has(.monitor-action-menu.is-open){overflow:visible}
+
+/* Monitoring activity tables */
+.monitoring-activity-table{min-width:900px}
+.monitoring-activity-table .monitor-url{max-width:260px;overflow-wrap:anywhere;line-height:1.5}
+.monitoring-activity-table .status-chip{white-space:nowrap}
