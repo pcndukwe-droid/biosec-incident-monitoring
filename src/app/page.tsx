@@ -1,5 +1,6 @@
 import { currentUser } from "../lib/server/auth";
 import { redirect } from "next/navigation";
+import LogoutButton from "./logout-button";
 
 const navigation = ["Overview", "Monitors", "Incidents", "Reports", "Notifications", "Settings"];
 
@@ -24,7 +25,7 @@ export default async function Home() {
       </aside>
 
       <main className="content">
-        <header className="topbar"><div className="breadcrumbs">Operations <span>/</span> Overview</div><div className="environment"><span className="connection-dot" /> Production workspace</div></header>
+        <header className="topbar"><div className="breadcrumbs">Operations <span>/</span> Overview</div><div className="environment"><span className="connection-dot" /> Production workspace <span style={{ marginLeft: "12px", color: "#52715c" }}>{user.username}</span> <LogoutButton /></div></header>
         <section className="intro">
           <div><span className="eyebrow">INFRASTRUCTURE OBSERVABILITY</span><h1>Monitoring overview</h1><p>Monitor service availability, investigate incidents, and keep Biosec infrastructure reliable.</p></div>
           <div className="setup-label">INITIAL SETUP</div>
