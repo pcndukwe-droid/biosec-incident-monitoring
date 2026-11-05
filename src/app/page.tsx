@@ -35,7 +35,7 @@ export default async function Home() {
      <section className="panel"><div className="panel-title"><div><h2>Monitored services</h2><p>Availability of registered production endpoints</p></div><Link href="/monitors" className="counter">Manage monitors</Link></div>
      {overview?.monitors.length?<div className="overview-services">{overview.monitors.map(m=><div key={m.id} className="overview-service">
        <div><strong>{m.name}</strong><small>{m.url}</small></div>
-       <span className={"status-chip "+m.status}>{!m.enabled?"PAUSED":!m.lastCheckedAt?"NOT STARTED":m.status.toUpperCase()}</span>
+       <span className={"status-chip "+m.status}>{!m.enabled?"PAUSED":!m.lastCheckedAt?"Awaiting First Check":m.status==="unknown"?"Verifying":m.status.toUpperCase()}</span>
      </div>)}</div>:<div className="empty-state"><div className="empty-glyph">⌁</div><h3>No monitors configured</h3><p>Register an authorized public HTTPS application or API health endpoint.</p><Link className="primary-action" href="/monitors">Add first endpoint</Link></div>}
      </section>
      <section className="panel"><div className="panel-title"><div><h2>Platform readiness</h2><p>Implementation progress</p></div></div><div className="steps">{setupSteps.map(step=><div className="step" key={step.label}><span className={step.done?"step-icon done":"step-icon"}>{step.done?"✓":"○"}</span><div><strong>{step.label}</strong><p>{step.note}</p></div></div>)}</div></section>
