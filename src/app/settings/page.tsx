@@ -91,8 +91,8 @@ export default function SettingsPage() {
         <textarea value={recipients} disabled={!ready} onChange={event=>setRecipients(event.target.value)} rows={3} placeholder="support@example.com, operations@example.com"/>
       </label>
       <label className="toggle"><input type="checkbox" disabled={!ready} checked={settings.emailEnabled} onChange={event=>setSettings(prev=>({...prev,emailEnabled:event.target.checked}))}/> Enable email notifications</label>
-      <label className="toggle"><input type="checkbox" disabled={!ready} checked={settings.monitoringEnabled} onChange={event=>setSettings(prev=>({...prev,monitoringEnabled:event.target.checked}))}/> Enable monitoring in database settings</label>
-      <p className="help">Monitoring also requires the Cloudflare <code>MONITORING_ENABLED=true</code> master switch, approved monitors, working database connectivity and an authenticated administrator. Gmail API delivery requires separate OAuth credentials in Cloudflare secrets.</p>
+      <label className="toggle"><input type="checkbox" disabled={!ready} checked={settings.monitoringEnabled} onChange={event=>setSettings(prev=>({...prev,monitoringEnabled:event.target.checked}))}/> Enable Endpoint Monitoring</label>
+      <p className="help">Endpoint checks follow the intervals configured above. The underlying Cloudflare runtime also needs its monitoring permission enabled by the platform administrator. Gmail API delivery requires separate OAuth credentials in Cloudflare secrets.</p>
       <button disabled={!ready || saving} type="submit">{saving ? "Saving..." : "Save settings"}</button>
     </form>
     {ready && <AdminUsers />}
