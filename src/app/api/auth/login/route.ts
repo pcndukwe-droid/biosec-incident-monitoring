@@ -16,10 +16,9 @@ export async function POST(request: NextRequest) {
   const env = await getAuthEnv();
   try {
     const user = await withAuthDb(env, async db => {
-      await db.collection("auth_rate_limits").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
       const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
-      const key = ip + ":" + input.username.trim().toLowerCase();
-      if (!(await throttle(db, key))) return null;
+      const key = "account:" + ip + ":" + input.username.trim().toLowerCase();
+      if (!(await throttle(db, key)) || !(await throttle(db, "ip:" + ip, 30))) return null;
       const found = await db.collection<StoredUser>("admin_users").findOne({
         username: input.username.trim().toLowerCase(), enabled: true,
       });
