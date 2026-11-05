@@ -53,6 +53,14 @@ export async function POST(request: NextRequest) {
     if (error instanceof MongoServerError && error.code === 11000 || error instanceof Error && error.message === "SETUP_COMPLETE") {
       return NextResponse.json({ error: "Initial administrator already created" }, { status: 409 });
     }
-    return NextResponse.json({ error: "Initial setup failed; review database logs" }, { status: 503 });
+    const diagnosticId = crypto.randomUUID();
+    const name = error instanceof Error ? error.name : "UnknownError";
+    const code = error && typeof error === "object" && "code" in error
+      ? String(error.code) : "unavailable";
+    console.error("biosec.auth.bootstrap.failed", { diagnosticId, name, code });
+    return NextResponse.json(
+      { error: "Initial setup failed; review database logs", diagnosticId },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
+    );
   }
 }
