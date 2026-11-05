@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const auth = await requireApiUser(request, "admin");
   if (auth instanceof Response) return auth;
   try {
-    const settings = await withMonitoringDb(auth, readSettings);
+    const settings = await withMonitoringDb(auth.env, readSettings);
     return Response.json({ settings }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return Response.json({ error: "Unable to read monitoring settings" }, { status: 503 });
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
   try {
     const settings = normalizeSettings(input as Partial<MonitoringSettings>);
     settings.updatedAt = new Date();
-    await withMonitoringDb(auth, async db => {
+    await withMonitoringDb(auth.env, async db => {
       const { _id, ...mutableSettings } = settings;
       await db.collection<MonitoringSettings>("monitoring_settings").updateOne(
         { _id: "global" },
