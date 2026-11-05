@@ -75,7 +75,7 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
      let payload:Record<string,unknown>={};
      try{payload=JSON.parse(raw) as Record<string,unknown>;}catch{}
      if(!response.ok)throw Error(typeof payload.error==="string"?payload.error:"Manual test failed (HTTP "+response.status+")");
-     setTestResults(prev=>({...prev,[m.id]:payload as ManualTestResult}));
+     setTestResults(prev=>({...prev,[m.id]:payload as unknown as ManualTestResult}));
    }catch(e){setError(e instanceof Error?e.message:"Unable to test endpoint");}
    finally{setTestingId(null);}
  }
