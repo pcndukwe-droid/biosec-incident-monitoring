@@ -172,7 +172,7 @@ async function runDue(db: Db, env: MonitoringEnv, settings: MonitoringSettings):
     enabled: true,
     $and: [
       { $or: [{ nextCheckAt: { $exists: false } }, { nextCheckAt: { $lte: now } }] },
-      { $or: [{ leaseUntil: { $exists: false } }, { leaseUntil: { $lte: now } }] },
+      { $or: [{ leaseUntil: { $exists: false } }, { leaseUntil: null }, { leaseUntil: { $lte: now } }] },
     ],
   }).limit(30).toArray();
   let processed = 0;
@@ -185,7 +185,7 @@ async function runDue(db: Db, env: MonitoringEnv, settings: MonitoringSettings):
       enabled: true,
       $and: [
         { $or: [{ nextCheckAt: { $exists: false } }, { nextCheckAt: { $lte: now } }] },
-        { $or: [{ leaseUntil: { $exists: false } }, { leaseUntil: { $lte: now } }] },
+        { $or: [{ leaseUntil: { $exists: false } }, { leaseUntil: null }, { leaseUntil: { $lte: now } }] },
       ],
     }, { $set: { leaseUntil: new Date(now.getTime() + 60_000) } });
     if (!reservation.modifiedCount) continue;
