@@ -189,7 +189,7 @@ export async function runScheduledChecks(env: MonitoringEnv): Promise<void> {
     // Persist a scheduler heartbeat only after the master switch and database toggle
     // have both permitted execution. The dashboard uses this to distinguish
     // configured monitoring from a scheduler that is demonstrably running.
-    await db.collection("monitoring_runtime").updateOne(
+    await db.collection<{ _id: string; lastRunAt: Date; lastProcessedCount: number }>("monitoring_runtime").updateOne(
       { _id: "scheduler" },
       { $set: { lastRunAt: new Date(), lastProcessedCount: count } },
       { upsert: true },
