@@ -126,7 +126,10 @@ export async function PATCH(request: NextRequest) {
           nextCheckAt: new Date(), lastCheckedAt: null, lastError: null } : {}),
         ...(!existing.enabled && changes.enabled ? { nextCheckAt: new Date() } : {}),
       };
-      await collection.updateOne({ _id: id }, { $set: update });
+      await collection.updateOne({ _id: id }, {
+        $set: update,
+        ...(input.intervalMinutes === null ? { $unset: { intervalMinutes: "" } } : {}),
+      });
       const updated = await collection.findOne({ _id: id });
       return Response.json({ monitor: present(updated!) });
     });
