@@ -21,7 +21,6 @@ export type PublicUser = { id: string; username: string; role: Role; enabled: bo
 export type AuthEnv = {
   MONGODB_URI?: string;
   JWT_SECRET?: string;
-  AUTH_BOOTSTRAP_TOKEN?: string;
 };
 
 export async function getAuthEnv(): Promise<AuthEnv> {
