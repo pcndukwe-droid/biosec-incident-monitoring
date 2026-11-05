@@ -10,6 +10,10 @@ type Monitor = {
 };
 type Draft = { name:string; url:string; expectedStatus:number; enabled:boolean; intervalMinutes:string;
  method:"GET"|"POST"; requestBody:string; responseCheck:"status"|"json-nonempty"|"json-field"; responseField:string; };
+type ManualTestResult = {
+ monitorId:string; name:string; method:string; healthy:boolean; httpStatus:number|null;
+ expectedStatus:number; latencyMs:number; validation:string; error:string|null; testedAt:string;
+};
 const empty:Draft={name:"",url:"",expectedStatus:200,enabled:false,intervalMinutes:"",method:"GET",requestBody:"",responseCheck:"status",responseField:""};
 export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
  const [items,setItems]=useState<Monitor[]>([]);
@@ -20,6 +24,8 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [success,setSuccess]=useState("");
+ const [testingId,setTestingId]=useState<string|null>(null);
+ const [testResults,setTestResults]=useState<Record<string,ManualTestResult>>({});
  async function load() {
    const res=await fetch("/api/admin/monitors",{cache:"no-store"});
    const data=await res.json();
@@ -56,6 +62,22 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
      await load();setSuccess(m.enabled?"Monitor paused.":"Monitor enabled. Scheduled checks also require both global monitoring switches.");
    }catch(e){setError(e instanceof Error?e.message:"Unable to update");}
    finally{setBusy(false);}
+ }
+ async function testEndpoint(m:Monitor){
+   if(testingId)return;
+   setTestingId(m.id);setError("");setSuccess("");
+   try{
+     const response=await fetch("/api/admin/monitors/test",{
+       method:"POST",headers:{"Content-Type":"application/json"},
+       body:JSON.stringify({id:m.id}),cache:"no-store"
+     });
+     const raw=await response.text();
+     let payload:Record<string,unknown>={};
+     try{payload=JSON.parse(raw) as Record<string,unknown>;}catch{}
+     if(!response.ok)throw Error(typeof payload.error==="string"?payload.error:"Manual test failed (HTTP "+response.status+")");
+     setTestResults(prev=>({...prev,[m.id]:payload as ManualTestResult}));
+   }catch(e){setError(e instanceof Error?e.message:"Unable to test endpoint");}
+   finally{setTestingId(null);}
  }
  async function remove(m:Monitor){
    if(!window.confirm("Delete "+m.name+"? Historical incident records will remain."))return;
@@ -100,7 +122,23 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
          <td><span className={"status-chip "+m.status}>{m.status.toUpperCase()}</span></td>
          <td>{m.intervalMinutes??"Default"} min</td>
          <td>{m.lastCheckedAt?new Date(m.lastCheckedAt).toLocaleString():"Not checked"}</td>
-         <td>{canEdit?<div className="table-actions"><button disabled={busy} onClick={()=>startEdit(m)}>Edit</button><button disabled={busy} onClick={()=>toggle(m)}>{m.enabled?"Pause":"Enable"}</button><button disabled={busy} onClick={()=>remove(m)}>Delete</button></div>:"View only"}</td>
-       </tr>)}</tbody></table></div>}
+         <td>{canEdit?<div className="table-actions"><button disabled={busy||testingId!==null} onClick={()=>testEndpoint(m)}>{testingId===m.id?"Testing...":"Test"}</button><button disabled={busy} onClick={()=>startEdit(m)}>Edit</button><button disabled={busy} onClick={()=>toggle(m)}>{m.enabled?"Pause":"Enable"}</button><button disabled={busy} onClick={()=>remove(m)}>Delete</button></div>:"View only"}</td>
+       </tr>)}</tbody></table>
+       {Object.keys(testResults).length>0&&<section className="manual-test-results" aria-label="Manual test results">
+         <h3>Manual test results</h3>
+         <p>One-time checks only. These results do not update scheduled monitoring status, open incidents or send alerts.</p>
+         {items.filter(m=>testResults[m.id]).map(m=>{
+           const t=testResults[m.id];
+           return <div className="manual-test-result" key={m.id}>
+             <strong>{m.name}</strong>
+             <span className={"status-chip "+(t.healthy?"up":"down")}>{t.healthy?"PASS":"FAIL"}</span>
+             <span>HTTP: {t.httpStatus??"No response"} (expected {t.expectedStatus})</span>
+             <span>Time: {t.latencyMs} ms</span>
+             <span>Validation: {t.validation}</span>
+             <span>{new Date(t.testedAt).toLocaleString()}</span>
+             {t.error&&<span className="test-failure-reason">Reason: {t.error}</span>}
+           </div>;
+         })}
+       </section>}</div>}
  </section>;
 }
