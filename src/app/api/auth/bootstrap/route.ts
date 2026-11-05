@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MongoServerError, type Document } from "mongodb";
+import { MongoServerError } from "mongodb";
 import { getAuthEnv, hashPassword, issueToken, publicUser, sameOrigin, sessionCookieOptions, SESSION_COOKIE, validPassword, validUsername, withAuthDb, type StoredUser } from "../../../../lib/server/auth";
 
 export const runtime = "nodejs";
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       const count = await adminUsers.estimatedDocumentCount();
       if (count !== 0) throw new Error("SETUP_COMPLETE");
       // Only one initializer can claim the singleton id, even if requests race.
-      await db.collection<Document>("auth_bootstrap").insertOne({ _id: "initial", at: new Date() });
+      await db.collection<{ _id: string; at: Date }>("auth_bootstrap").insertOne({ _id: "initial", at: new Date() });
       const now = new Date();
       const result = await adminUsers.insertOne({
         username: input.username as string, passwordHash, role: "admin", enabled: true,
