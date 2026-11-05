@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
   let mismatch = a.length ^ b.length;
   for (let i = 0; i < Math.max(a.length, b.length); i++) mismatch |= (a[i] ?? 0) ^ (b[i] ?? 0);
   if (mismatch) return NextResponse.json({ error: "Invalid setup credentials" }, { status: 403 });
-  const passwordHash = await hashPassword(input.password);
   try {
+    const passwordHash = await hashPassword(input.password);
     const user = await withAuthDb(env, async db => {
       const adminUsers = db.collection<StoredUser>("admin_users");
       await adminUsers.createIndex({ username: 1 }, { unique: true });
