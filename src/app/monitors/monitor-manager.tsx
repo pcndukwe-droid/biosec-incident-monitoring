@@ -1,12 +1,16 @@
 "use client";
 import { Fragment, useEffect, useState, type FormEvent } from "react";
 
+type SavedManualTest = {
+ healthy:boolean; httpStatus:number|null; expectedStatus:number; latencyMs:number;
+ validation:string; error:string|null; testedAt:string; method:string;
+};
 type Monitor = {
  id:string; name:string; url:string; type:string; expectedStatus:number; enabled:boolean;
  method:"GET"|"POST"; requestBody:string|null; responseCheck:"status"|"json-nonempty"|"json-field"; responseField:string|null;
  intervalMinutes:number|null; status:"up"|"down"|"unknown";
  lastCheckedAt:string|null; lastHttpStatus:number|null; lastLatencyMs:number|null;
- lastError:string|null; nextCheckAt:string|null;
+ lastError:string|null; nextCheckAt:string|null; lastManualTest:SavedManualTest|null;
 };
 type Draft = { name:string; url:string; expectedStatus:number; enabled:boolean; intervalMinutes:string;
  method:"GET"|"POST"; requestBody:string; responseCheck:"status"|"json-nonempty"|"json-field"; responseField:string; };
@@ -80,6 +84,7 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
      try{payload=JSON.parse(raw) as Record<string,unknown>;}catch{}
      if(!response.ok)throw Error(typeof payload.error==="string"?payload.error:"Manual test failed (HTTP "+response.status+")");
      setTestResults(prev=>({...prev,[m.id]:payload as unknown as ManualTestResult}));
+     await load();
    }catch(e){setTestErrors(prev=>({...prev,[m.id]:e instanceof Error?e.message:"Unable to test endpoint"}));}
    finally{setTestingId(null);}
  }
@@ -119,7 +124,7 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
    </form>}
    {loading?<p className="muted">Loading monitors...</p>:items.length===0?
      <div className="workspace-empty"><h3>No endpoints registered yet</h3><p>Add your first approved public HTTPS health endpoint to begin configuring monitoring.</p></div>:
-     <div className="table-wrap"><table className="work-table"><thead><tr><th>Service</th><th>Method</th><th>Endpoint</th><th>Status</th><th>Schedule</th><th>Last check</th><th>Actions</th></tr></thead>
+     <div className="table-wrap"><table className="work-table"><thead><tr><th>Service</th><th>Method</th><th>Endpoint</th><th>Status</th><th>Schedule</th><th>Last scheduled</th><th>Last manual test</th><th>Actions</th></tr></thead>
        <tbody>{items.map(m=><Fragment key={m.id}>
          <tr>
            <td><strong>{m.name}</strong><small>{m.enabled?"Enabled":"Paused"}</small></td>
@@ -127,9 +132,28 @@ export default function MonitorManager({ canEdit }: {canEdit:boolean}) {
            <td><span className={"status-chip "+m.status}>{m.status.toUpperCase()}</span></td>
            <td>{m.intervalMinutes??"Default"} min</td>
            <td>{m.lastCheckedAt?new Date(m.lastCheckedAt).toLocaleString():"Not checked"}</td>
-           <td>{canEdit?<div className="table-actions"><button disabled={busy||testingId!==null} onClick={()=>testEndpoint(m)}>{testingId===m.id?"Testing...":"Test"}</button><button disabled={busy} onClick={()=>startEdit(m)}>Edit</button><button disabled={busy} onClick={()=>toggle(m)}>{m.enabled?"Pause":"Enable"}</button><button disabled={busy} onClick={()=>remove(m)}>Delete</button></div>:"View only"}</td>
+           <td>{m.lastManualTest?<div className="manual-test-cell">
+             <span className={"status-chip "+(m.lastManualTest.healthy?"up":"down")}>{m.lastManualTest.healthy?"PASS":"FAIL"}</span>
+             <small>{new Date(m.lastManualTest.testedAt).toLocaleString()}</small>
+             <small>{m.lastManualTest.latencyMs} ms · HTTP {m.lastManualTest.httpStatus??"—"}</small>
+           </div>:<span className="muted">Not tested</span>}</td>
+           <td>{canEdit?<select className="monitor-actions-select" aria-label={"Actions for "+m.name}
+             value="" disabled={busy||testingId!==null}
+             onChange={event=>{
+               const action=event.target.value;
+               if(action==="test")void testEndpoint(m);
+               else if(action==="edit")startEdit(m);
+               else if(action==="toggle")void toggle(m);
+               else if(action==="delete")void remove(m);
+             }}>
+             <option value="" disabled>Actions ▾</option>
+             <option value="test">Test endpoint</option>
+             <option value="edit">Edit endpoint</option>
+             <option value="toggle">{m.enabled?"Pause monitoring":"Enable monitoring"}</option>
+             <option value="delete">Delete endpoint</option>
+           </select>:"View only"}</td>
          </tr>
-         {expandedTest===m.id&&<tr className="manual-test-inline-row"><td colSpan={7}>
+         {expandedTest===m.id&&<tr className="manual-test-inline-row"><td colSpan={8}>
            <div className="manual-test-inline" role="status" aria-live="polite">
              {testingId===m.id?<><strong>Testing {m.name}…</strong><span>Sending a one-time {m.method??"GET"} request.</span></>:
              testErrors[m.id]?<><strong className="test-failure-reason">Test could not complete</strong><span>{testErrors[m.id]}</span></>:
