@@ -119,3 +119,7 @@
 .monitoring-activity-table{min-width:900px}
 .monitoring-activity-table .monitor-url{max-width:260px;overflow-wrap:anywhere;line-height:1.5}
 .monitoring-activity-table .status-chip{white-space:nowrap}
+
+/* Operational overview: full-width monitoring panel without implementation details */
+.overview-monitor-panel{margin-top:20px;width:100%}
+.overview-monitor-panel>.panel{min-height:300px;width:100%}
