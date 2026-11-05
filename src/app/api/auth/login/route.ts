@@ -32,7 +32,16 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ user: publicUser(user) }, { headers: { "Cache-Control": "no-store" } });
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions);
     return response;
-  } catch {
-    return NextResponse.json({ error: "Login service is unavailable" }, { status: 503 });
+  } catch (error) {
+    // Never log passwords, JWT tokens or MongoDB connection strings.
+    const diagnosticId = crypto.randomUUID();
+    const name = error instanceof Error ? error.name : "UnknownError";
+    const code = error && typeof error === "object" && "code" in error
+      ? String(error.code) : "unavailable";
+    console.error("biosec.auth.login.failed", { diagnosticId, name, code });
+    return NextResponse.json(
+      { error: "Login service is unavailable", diagnosticId },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
+    );
   }
 }
