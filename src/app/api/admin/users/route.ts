@@ -74,6 +74,9 @@ export async function PATCH(request: NextRequest) {
       const users = db.collection<StoredUser>("admin_users");
       const target = await users.findOne({ _id: new ObjectId(input.id as string) });
       if (!target) return "NOT_FOUND";
+      // The original Biosec OEM administrator is a protected platform account.
+      // Reject all account mutations at the API level, even from another admin.
+      if (target.username.toLowerCase() === "biosec-oem") return "PROTECTED_ACCOUNT";
       if (target.enabled && target.role === "admin" && (fields.enabled === false || fields.role && fields.role !== "admin")) {
         const admins = await users.countDocuments({ role: "admin", enabled: true });
         if (admins <= 1) return "LAST_ADMIN";
@@ -81,7 +84,10 @@ export async function PATCH(request: NextRequest) {
       await users.updateOne({ _id: target._id }, { $set: fields, $inc: { sessionVersion: 1 } });
       return "OK";
     });
-    if (status !== "OK") return Response.json({ error: status === "LAST_ADMIN" ? "Cannot disable the last active administrator" : "User not found" }, { status: 400 });
+    if (status !== "OK") return Response.json({
+      error: status === "PROTECTED_ACCOUNT" ? "This system account is protected and cannot be modified."
+        : status === "LAST_ADMIN" ? "Cannot disable the last active administrator" : "User not found",
+    }, { status: status === "PROTECTED_ACCOUNT" ? 403 : 400 });
     return Response.json({ ok: true });
   } catch { return Response.json({ error: "Unable to update account" }, { status: 503 }); }
 }
