@@ -5,6 +5,7 @@ import {
 } from "./server/monitoring-db";
 import { validateMonitorTarget, verifyResponseJson } from "./server/monitor-config";
 import { sendSmtpAlert, smtpConfigured } from "./smtp";
+import { renderAlertEmail } from "./email-templates";
 
 export type CheckResult = { healthy: boolean; latencyMs: number; httpStatus?: number; error?: string };
 
@@ -76,13 +77,11 @@ async function notify(
     return;
   }
   try {
-    const subject = "[BIOSEC] " + kind + ": " + monitor.name;
-    const body = [
-      "Biosec Incident Monitoring", "", "Service: " + monitor.name,
-      "Status: " + kind, "Time: " + new Date().toISOString(),
-      details, "", "This is an automated monitoring notification.",
-    ].join("\r\n");
-    await sendSmtpAlert(env, settings.alertRecipients, subject, body);
+    const email = renderAlertEmail({
+      kind, service: monitor.name, url: monitor.url,
+      details, time: new Date(),
+    });
+    await sendSmtpAlert(env, settings.alertRecipients, email.subject, email.text, email.html);
     await db.collection("alert_notifications").updateOne({ _id: delivery.insertedId }, { $set: { status: "SENT", sentAt: new Date() } });
   } catch (error) {
     // Record the failure. Don't lose the original incident.
