@@ -1,7 +1,5 @@
 // Cloudflare Workers SMTP transport. SMTP is disabled until both SMTP_ENABLED
 // (Cloudflare) and emailEnabled (application settings) are explicitly enabled.
-// @ts-ignore Cloudflare runtime module resolved by Workers, not Node typecheck.
-import { connect } from "cloudflare:sockets";
 import type { MonitoringEnv } from "./server/monitoring-db";
 
 type Socket = {
@@ -87,6 +85,10 @@ export async function sendSmtpAlert(
   if (!recipients.length || recipients.length > 10) throw new Error("Invalid SMTP recipients");
   const username = env.SMTP_USERNAME!;
   const password = env.SMTP_PASSWORD!;
+  // Import only during a real delivery. Next.js evaluates route modules in Node
+  // while collecting build metadata; cloudflare:sockets exists only in Workers.
+  // @ts-ignore Cloudflare runtime-only module is resolved in the deployed Worker.
+  const { connect } = await import("cloudflare:sockets");
   const socket: Socket = connect({ hostname: host, port }, { secureTransport: "starttls" });
   let active = socket;
   let response = smtpReader(active);
