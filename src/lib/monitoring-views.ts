@@ -52,13 +52,11 @@ export type CheckHistoryRow = {
 export async function monitoringActivity() {
   const env=await getAuthEnv();
   return withMonitoringDb(env,async db=>{
-    const [settings,monitors,history,runtime]=await Promise.all([
+    const [settings,monitors,runtime]=await Promise.all([
       readSettings(db),
       db.collection("monitored_services").find({}).sort({createdAt:-1}).limit(200).toArray(),
-      db.collection("health_checks").find({}).sort({checkedAt:-1}).limit(100).toArray(),
       db.collection<{_id:string;lastRunAt:Date;lastProcessedCount:number}>("monitoring_runtime").findOne({_id:"scheduler"}),
     ]);
-    const labels=new Map(monitors.map(m=>[String(m._id),String(m.name)]));
     const activity:MonitoringActivity[]=monitors.map(m=>({
       id:String(m._id),service:String(m.name),method:String(m.method??"GET"),
       url:String(m.url),enabled:m.enabled===true,status:String(m.status??"unknown"),
@@ -69,13 +67,6 @@ export async function monitoringActivity() {
       nextCheckAt:date(m.nextCheckAt),lastManualAt:date(m.lastManualTest?.testedAt),
       lastManualHealthy:typeof m.lastManualTest?.healthy==="boolean"?m.lastManualTest.healthy:null,
     }));
-    const checks:CheckHistoryRow[]=history.map(h=>({
-      id:String(h._id),service:labels.get(String(h.monitorId))??"Deleted monitor",
-      checkedAt:date(h.checkedAt),healthy:h.healthy===true,
-      httpStatus:typeof h.httpStatus==="number"?h.httpStatus:null,
-      latencyMs:typeof h.latencyMs==="number"?h.latencyMs:null,
-      error:typeof h.error==="string"?h.error.slice(0,200):null,
-    }));
     const lastRunAt=date(runtime?.lastRunAt);
     const recentlyRunning=runtime?.lastRunAt instanceof Date &&
       Date.now()-runtime.lastRunAt.getTime()>=0 &&
@@ -83,7 +74,7 @@ export async function monitoringActivity() {
     return {
       monitoringEnabled:settings.monitoringEnabled,
       recentlyRunning,
-      lastRunAt,activity,checks,
+      lastRunAt,activity,
     };
   });
 }
