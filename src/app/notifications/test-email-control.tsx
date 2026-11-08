@@ -1,28 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function TestEmailControl() {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
+  const [failed, setFailed] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!confirmOpen) return;
+    cancelRef.current?.focus();
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !sending) {
+        setConfirmOpen(false);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      triggerRef.current?.focus();
+    };
+  }, [confirmOpen, sending]);
+
   async function send() {
-    if (!window.confirm("Send one test email to the recipients currently saved in Settings?")) return;
+    if (sending) return;
     setSending(true);
     setMessage("");
     try {
       const response = await fetch("/api/admin/notifications/test", { method: "POST" });
-      const json = await response.json();
+      const json: { error?: string; message?: string } = await response.json();
       if (!response.ok) throw new Error(json.error ?? "Test email failed");
+      setFailed(false);
       setMessage(json.message ?? "Test email accepted by SMTP server.");
+      setConfirmOpen(false);
     } catch (error) {
+      setFailed(true);
       setMessage(error instanceof Error ? error.message : "Unable to send test email");
+      setConfirmOpen(false);
     } finally {
       setSending(false);
     }
   }
-  return <div style={{ margin: "12px 0 18px" }}>
-    <button type="button" disabled={sending} onClick={send}>{sending ? "Sending..." : "Send Test Email"}</button>
-    <p style={{ fontSize: 12, marginTop: 8 }}>Only sends when clicked. Uses the recipient saved in Settings and requires email delivery to be enabled.</p>
-    {message && <p role="status" style={{ fontSize: 13, overflowWrap: "anywhere" }}>{message}</p>}
-  </div>;
+
+  return <section className="email-test-area" aria-label="Email delivery test">
+    <button ref={triggerRef} className="email-test-trigger" type="button" disabled={sending} onClick={() => { setMessage(""); setConfirmOpen(true); }}>
+      <span aria-hidden="true">✉</span> Send Test Email
+    </button>
+    <p className="email-test-help">Send a single notification to the recipients saved in Settings. A test is sent only after confirmation.</p>
+    {message && <div className={"email-test-feedback " + (failed ? "email-test-error" : "email-test-success")} role="status">{message}</div>}
+
+    {confirmOpen && <div className="email-test-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !sending) setConfirmOpen(false); }}>
+      <div className="email-test-dialog" role="dialog" aria-modal="true" aria-labelledby="email-test-dialog-title" aria-describedby="email-test-dialog-desc" onKeyDown={event => {
+        if (event.key !== "Tab") return;
+        const elements = [cancelRef.current, document.getElementById("email-test-confirm")].filter((element): element is HTMLElement => !!element);
+        if (!elements.length) return;
+        const activeIndex = elements.indexOf(document.activeElement as HTMLElement);
+        if (event.shiftKey && activeIndex === 0) { event.preventDefault(); elements[elements.length - 1].focus(); }
+        if (!event.shiftKey && activeIndex === elements.length - 1) { event.preventDefault(); elements[0].focus(); }
+      }}>
+        <div className="email-test-dialog-icon" aria-hidden="true">✉</div>
+        <h2 id="email-test-dialog-title">Send test notification?</h2>
+        <p id="email-test-dialog-desc">One test email will be sent to the recipient address currently saved in Monitoring Settings.</p>
+        <div className="email-test-dialog-note">This action does not change your alert recipients or monitoring configuration.</div>
+        <div className="email-test-dialog-actions">
+          <button ref={cancelRef} type="button" className="email-test-cancel" disabled={sending} onClick={() => setConfirmOpen(false)}>Cancel</button>
+          <button id="email-test-confirm" type="button" className="email-test-confirm" disabled={sending} onClick={send}>{sending ? "Sending..." : "Send Test Email"}</button>
+        </div>
+      </div>
+    </div>}
+  </section>;
 }
