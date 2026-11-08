@@ -81,7 +81,7 @@ async function notify(
       "Biosec Incident Monitoring", "", "Service: " + monitor.name,
       "Status: " + kind, "Time: " + new Date().toISOString(),
       details, "", "This is an automated monitoring notification.",
-    ].join("\\r\\n");
+    ].join("\r\n");
     await sendSmtpAlert(env, settings.alertRecipients, subject, body);
     await db.collection("alert_notifications").updateOne({ _id: delivery.insertedId }, { $set: { status: "SENT", sentAt: new Date() } });
   } catch (error) {
