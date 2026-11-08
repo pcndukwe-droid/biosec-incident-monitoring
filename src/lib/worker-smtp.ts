@@ -1,5 +1,6 @@
 // Cloudflare-native SMTP: imported exclusively by the outer Worker, never by
 // the Next.js/OpenNext server bundle.
+// @ts-ignore Cloudflare runtime module is resolved by the outer Worker bundler.
 import { connect } from "cloudflare:sockets";
 import type { MonitoringEnv } from "./server/monitoring-db";
 
