@@ -1,15 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { NotificationRow } from "../../lib/monitoring-views";
 
 type PendingDeletion = { scope: "one"; id: string } | { scope: "all" };
+type HistoryResponse = {
+  page: number; pageSize: number; pageCount: number; total: number;
+  rows: NotificationRow[];
+};
 type Props = { initialRows: NotificationRow[]; canManage: boolean };
+const PAGE_SIZE = 20;
 
 export default function NotificationHistory({ initialRows, canManage }: Props) {
-  const router = useRouter();
-  const [rows, setRows] = useState(initialRows);
+  const [rows, setRows] = useState(initialRows.slice(0, PAGE_SIZE));
+  const [total, setTotal] = useState(initialRows.length);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(Math.max(1, Math.ceil(initialRows.length / PAGE_SIZE)));
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState<PendingDeletion | null>(null);
   const [working, setWorking] = useState(false);
   const workingRef = useRef(false);
@@ -17,7 +26,49 @@ export default function NotificationHistory({ initialRows, canManage }: Props) {
   const [error, setError] = useState("");
   const cancelRef = useRef<HTMLButtonElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
-  useEffect(() => { setRows(initialRows); }, [initialRows]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { setPage(1); setQuery(search.trim()); }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const load = useCallback(async (targetPage: number, searchText: string, signal?: AbortSignal) => {
+    const params = new URLSearchParams({ page: String(targetPage), search: searchText });
+    const response = await fetch("/api/admin/notifications/history?" + params.toString(), { cache: "no-store", signal });
+    const json: HistoryResponse & { error?: string } = await response.json();
+    if (!response.ok) throw new Error(json.error || "Unable to load notification history");
+    return json;
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    load(page, query, controller.signal).then(data => {
+      if (controller.signal.aborted) return;
+      setRows(data.rows);
+      setTotal(data.total);
+      setPages(data.pageCount);
+      if (data.page !== page) setPage(data.page);
+      setError("");
+    }).catch(cause => {
+      if (controller.signal.aborted) return;
+      setError(cause instanceof Error ? cause.message : "Unable to load notification history");
+    }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [page, query, load]);
+
+  async function reload() {
+    try {
+      const data = await load(page, query);
+      setRows(data.rows);
+      setTotal(data.total);
+      setPages(data.pageCount);
+      if (data.page !== page) setPage(data.page);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to refresh history");
+    }
+  }
+
   useEffect(() => {
     if (!pending) return;
     cancelRef.current?.focus();
@@ -26,9 +77,9 @@ export default function NotificationHistory({ initialRows, canManage }: Props) {
       if (event.key === "Tab") {
         const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".history-confirmation button:not(:disabled)"));
         if (!buttons.length) return;
-        const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
-        if (event.shiftKey && i === 0) { event.preventDefault(); buttons[buttons.length - 1].focus(); }
-        else if (!event.shiftKey && i === buttons.length - 1) { event.preventDefault(); buttons[0].focus(); }
+        const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+        if (event.shiftKey && index === 0) { event.preventDefault(); buttons[buttons.length - 1].focus(); }
+        else if (!event.shiftKey && index === buttons.length - 1) { event.preventDefault(); buttons[0].focus(); }
       }
     };
     document.addEventListener("keydown", handleKey);
@@ -53,14 +104,8 @@ export default function NotificationHistory({ initialRows, canManage }: Props) {
       });
       const data: { deleted?: number; error?: string } = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to delete history");
-      if (pending.scope === "one") {
-        const id = pending.id;
-        setRows(current => current.filter(row => row.id !== id));
-      } else {
-        setRows(current => current.filter(row => row.status === "PENDING"));
-      }
       setPending(null);
-      router.refresh();
+      await reload();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to delete history");
       setPending(null);
@@ -68,30 +113,55 @@ export default function NotificationHistory({ initialRows, canManage }: Props) {
       setWorking(false);
     }
   }
+
   const completed = rows.filter(row => ["SENT", "FAILED", "CONFIGURATION_REQUIRED"].includes(row.status));
   const selected = pending?.scope === "one" ? rows.find(row => row.id === pending.id) : null;
+  const from = total ? (page - 1) * PAGE_SIZE + 1 : 0;
+  const to = Math.min(page * PAGE_SIZE, total);
+
   return <>
     <section className="workspace-panel">
       <div className="workspace-panel-head history-panel-heading">
-        <div><h2>Email delivery history</h2><p>Most recent 100 alert attempts</p></div>
+        <div><h2>Email delivery history</h2><p>Search and review notification delivery attempts</p></div>
         <div className="history-panel-actions">
-          <span className="counter">{rows.length} entries</span>
-          {canManage && completed.length > 0 && <button type="button" className="history-clear-button" onClick={() => askDelete({ scope: "all" })}>Clear history</button>}
+          <span className="counter">{total} entries</span>
+          {canManage && completed.length > 0 &&
+            <button type="button" className="history-clear-button" onClick={() => askDelete({ scope: "all" })}>Clear history</button>}
+        </div>
+      </div>
+      <div className="history-filter-bar">
+        <label htmlFor="notification-history-search">Search delivery history</label>
+        <div className="history-search-group">
+          <input id="notification-history-search" type="search"
+            value={search} onChange={event => setSearch(event.target.value)}
+            placeholder="Search recipient, event, status or error..." />
+          <button type="button" className="history-refresh-button" onClick={reload} disabled={loading}>Refresh</button>
         </div>
       </div>
       {error && <div role="alert" className="email-test-feedback email-test-error history-feedback">{error}</div>}
-      {!rows.length ? <div className="workspace-empty"><h3>No email delivery history</h3><p>Alert and test-email delivery attempts will appear here.</p></div> :
-        <div className="table-wrap"><table className="work-table"><thead><tr><th>Time</th><th>Event</th><th>Delivery</th><th>Recipients</th><th>Details</th>{canManage && <th>Action</th>}</tr></thead><tbody>
-          {rows.map(row => <tr key={row.id}>
+      {!rows.length ? <div className="workspace-empty"><h3>{query ? "No matching notifications" : "No email delivery history"}</h3><p>{query ? "Try another search term." : "Alert and test-email delivery attempts will appear here."}</p></div> :
+        <div className="table-wrap"><table className="work-table"><thead><tr>
+          <th>S/N</th><th>Time</th><th>Event</th><th>Delivery</th><th>Recipients</th><th>Details</th>{canManage && <th>Action</th>}
+        </tr></thead><tbody>
+          {rows.map((row, index) => <tr key={row.id}>
+            <td className="history-serial">{(page - 1) * PAGE_SIZE + index + 1}</td>
             <td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : "—"}</td>
             <td><strong>{row.kind}</strong></td>
             <td><span className={"status-chip " + (row.status === "SENT" ? "up" : row.status === "FAILED" ? "down" : "unknown")}>{row.status}</span></td>
             <td>{row.recipients.join(", ") || "—"}</td>
             <td>{row.error || "—"}</td>
-            {canManage && <td>{row.status === "PENDING" ? <span className="history-pending-note">Processing</span> : <button type="button" className="history-row-delete" onClick={() => askDelete({ scope: "one", id: row.id })} aria-label={"Delete " + row.kind + " notification from " + (row.createdAt ? new Date(row.createdAt).toLocaleString() : "history")}>Delete</button>}</td>}
+            {canManage && <td>{row.status === "PENDING" ? <span className="history-pending-note">Processing</span> :
+              <button type="button" className="history-row-delete" onClick={() => askDelete({ scope: "one", id: row.id })}>Delete</button>}</td>}
           </tr>)}
-        </tbody></table></div>
-      }
+        </tbody></table></div>}
+      <div className="history-pagination">
+        <span>{loading ? "Loading..." : total ? "Showing " + from + "–" + to + " of " + total + " records" : "0 records"}</span>
+        <div className="history-page-buttons">
+          <button type="button" disabled={page <= 1 || loading} onClick={() => setPage(current => Math.max(1, current - 1))}>Previous</button>
+          <span>Page {page} of {pages}</span>
+          <button type="button" disabled={page >= pages || loading} onClick={() => setPage(current => Math.min(pages, current + 1))}>Next</button>
+        </div>
+      </div>
     </section>
     {pending && <div className="email-test-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !workingRef.current) setPending(null); }}>
       <div className="email-test-dialog history-confirmation" role="dialog" aria-modal="true" aria-labelledby="history-delete-title" aria-describedby="history-delete-description">
