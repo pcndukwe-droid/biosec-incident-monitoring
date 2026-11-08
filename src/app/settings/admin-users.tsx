@@ -62,14 +62,14 @@ export default function AdminUsers() {
     </form>
     {message && <p role="status" className="settings-message">{message}</p>}
     <div className="user-list">
-      {accounts.map(account=><div className="user-record" key={account.id}>
+      {accounts.map(account=>{const protectedAccount = account.username.toLowerCase() === "biosec-oem"; return <div className="user-record" key={account.id}>
         <div><strong>{account.username}</strong><small>{account.role} · {account.enabled ? "Active" : "Disabled"}</small></div>
         <div className="user-actions">
-          <select aria-label={`Change role for ${account.username}`} value={account.role} disabled={busy} onChange={e=>update(account.id, {role:e.target.value})}><option value="viewer">Viewer</option><option value="operator">Operator</option><option value="admin">Administrator</option></select>
-          <button type="button" disabled={busy} onClick={()=>{const next=window.prompt("New password (minimum 12 characters) for " + account.username);if(next)update(account.id,{password:next});}}>Reset password</button>
-          <button type="button" disabled={busy} onClick={()=>update(account.id,{enabled:!account.enabled})}>{account.enabled?"Disable":"Enable"}</button>
+          <select aria-label={`Change role for ${account.username}`} value={account.role} disabled={busy || protectedAccount} title={protectedAccount ? "Protected system account" : undefined} onChange={e=>update(account.id, {role:e.target.value})}><option value="viewer">Viewer</option><option value="operator">Operator</option><option value="admin">Administrator</option></select>
+          <button type="button" disabled={busy || protectedAccount} title={protectedAccount ? "Protected system account" : undefined} onClick={()=>{const next=window.prompt("New password (minimum 12 characters) for " + account.username);if(next)update(account.id,{password:next});}}>Reset password</button>
+          <button type="button" disabled={busy || protectedAccount} title={protectedAccount ? "Protected system account" : undefined} onClick={()=>update(account.id,{enabled:!account.enabled})}>{account.enabled?"Disable":"Enable"}</button>
         </div>
-      </div>)}
+      </div>;})}
     </div>
   </section>;
 }
