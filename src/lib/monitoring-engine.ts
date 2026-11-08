@@ -4,6 +4,7 @@ import {
   type MonitoringEnv, type MonitoringSettings, type StoredMonitor,
 } from "./server/monitoring-db";
 import { validateMonitorTarget, verifyResponseJson } from "./server/monitor-config";
+import { sendSmtpAlert, smtpConfigured } from "./smtp";
 
 export type CheckResult = { healthy: boolean; latencyMs: number; httpStatus?: number; error?: string };
 
@@ -64,47 +65,24 @@ async function notify(
   incidentId: ObjectId, kind: "OPENED" | "RECOVERED" | "REMINDER", monitor: StoredMonitor,
   details: string,
 ): Promise<void> {
-  if (!settings.emailEnabled || settings.alertRecipients.length === 0) return;
+  if (!settings.emailEnabled || env.SMTP_ENABLED !== "true" || settings.alertRecipients.length === 0) return;
   const createdAt = new Date();
   const delivery = await db.collection("alert_notifications").insertOne({
     incidentId, monitorId: monitor._id, kind, recipients: settings.alertRecipients,
     status: "PENDING", createdAt,
   });
-  if (!env.GMAIL_CLIENT_ID || !env.GMAIL_CLIENT_SECRET || !env.GMAIL_REFRESH_TOKEN || !env.GMAIL_SENDER) {
+  if (!smtpConfigured(env)) {
     await db.collection("alert_notifications").updateOne({ _id: delivery.insertedId }, { $set: { status: "CONFIGURATION_REQUIRED" } });
     return;
   }
   try {
-    const params = new URLSearchParams({
-      client_id: env.GMAIL_CLIENT_ID, client_secret: env.GMAIL_CLIENT_SECRET,
-      refresh_token: env.GMAIL_REFRESH_TOKEN, grant_type: "refresh_token",
-    });
-    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", { method: "POST", body: params, signal: AbortSignal.timeout(10000) });
-    if (!tokenResponse.ok) throw new Error("Gmail OAuth token request failed: " + tokenResponse.status);
-    const token = await tokenResponse.json() as { access_token?: string };
-    if (!token.access_token) throw new Error("Missing Gmail access token");
     const subject = "[BIOSEC] " + kind + ": " + monitor.name;
     const body = [
       "Biosec Incident Monitoring", "", "Service: " + monitor.name,
       "Status: " + kind, "Time: " + new Date().toISOString(),
       details, "", "This is an automated monitoring notification.",
     ].join("\r\n");
-    const headers = [
-      "From: " + env.GMAIL_SENDER,
-      "To: " + settings.alertRecipients.join(", "),
-      "Subject: " + subject,
-      "MIME-Version: 1.0",
-      "Content-Type: text/plain; charset=UTF-8",
-      "", body,
-    ].join("\r\n");
-    const raw = btoa(unescape(encodeURIComponent(headers))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-    const sendResponse = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
-      method: "POST",
-      headers: { "Authorization": "Bearer " + token.access_token, "Content-Type": "application/json" },
-      body: JSON.stringify({ raw }),
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!sendResponse.ok) throw new Error("Gmail send failed: HTTP " + sendResponse.status);
+    await sendSmtpAlert(env, settings.alertRecipients, subject, body);
     await db.collection("alert_notifications").updateOne({ _id: delivery.insertedId }, { $set: { status: "SENT", sentAt: new Date() } });
   } catch (error) {
     // Record the failure. Don't lose the original incident.
