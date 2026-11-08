@@ -20,7 +20,7 @@ async function internalSmtp(request: Request, env: MonitoringEnv): Promise<Respo
     return Response.json({ error: "SMTP is disabled" }, { status: 409 });
   }
   const size = Number(request.headers.get("content-length") || "0");
-  if (size > 24000) return Response.json({ error: "Request exceeds allowed size" }, { status: 413 });
+  if (size > 40000) return Response.json({ error: "Request exceeds allowed size" }, { status: 413 });
   let input: unknown;
   try { input = await request.json(); } catch {
     return Response.json({ error: "Invalid request" }, { status: 400 });
@@ -34,11 +34,12 @@ async function internalSmtp(request: Request, env: MonitoringEnv): Promise<Respo
       data.recipients.some(v => typeof v !== "string" ||
         !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(v)) ||
       typeof data.subject !== "string" || data.subject.length > 180 ||
-      typeof data.body !== "string" || data.body.length > 12000) {
+      typeof data.body !== "string" || data.body.length > 12000 ||
+      (data.html !== undefined && (typeof data.html !== "string" || data.html.length > 22000))) {
     return Response.json({ error: "Invalid SMTP payload" }, { status: 400 });
   }
   try {
-    await deliverViaZoho(env, data.recipients as string[], data.subject, data.body);
+    await deliverViaZoho(env, data.recipients as string[], data.subject, data.body, data.html as string | undefined);
     return Response.json({ accepted: true });
   } catch (error) {
     // Return the failure class without exposing credentials or message bodies.
