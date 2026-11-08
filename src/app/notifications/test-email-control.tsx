@@ -8,13 +8,15 @@ export default function TestEmailControl() {
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const sendingRef = useRef(false);
+  sendingRef.current = sending;
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!confirmOpen) return;
     cancelRef.current?.focus();
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !sending) {
+      if (event.key === "Escape" && !sendingRef.current) {
         setConfirmOpen(false);
       }
     }
@@ -23,7 +25,7 @@ export default function TestEmailControl() {
       document.removeEventListener("keydown", handleKeyDown);
       triggerRef.current?.focus();
     };
-  }, [confirmOpen, sending]);
+  }, [confirmOpen]);
 
   async function send() {
     if (sending) return;
