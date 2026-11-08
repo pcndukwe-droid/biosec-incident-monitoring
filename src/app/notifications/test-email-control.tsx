@@ -49,7 +49,7 @@ export default function TestEmailControl() {
 
   return <section className="email-test-area" aria-label="Email delivery test">
     <button ref={triggerRef} className="email-test-trigger" type="button" disabled={sending} onClick={() => { setMessage(""); setConfirmOpen(true); }}>
-      <span aria-hidden="true">✉</span> Send Test Email
+      <svg className="notification-envelope" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> Send Test Email
     </button>
     <p className="email-test-help">Send a single notification to the recipients saved in Settings. A test is sent only after confirmation.</p>
     {message && <div className={"email-test-feedback " + (failed ? "email-test-error" : "email-test-success")} role="status">{message}</div>}
@@ -63,10 +63,10 @@ export default function TestEmailControl() {
         if (event.shiftKey && activeIndex === 0) { event.preventDefault(); elements[elements.length - 1].focus(); }
         if (!event.shiftKey && activeIndex === elements.length - 1) { event.preventDefault(); elements[0].focus(); }
       }}>
-        <div className="email-test-dialog-icon" aria-hidden="true">✉</div>
+        <div className="email-test-dialog-icon" aria-hidden="true"><svg className="notification-envelope" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
         <h2 id="email-test-dialog-title">Send test notification?</h2>
         <p id="email-test-dialog-desc">One test email will be sent to the recipient address currently saved in Monitoring Settings.</p>
-        <div className="email-test-dialog-note">This action does not change your alert recipients or monitoring configuration.</div>
+
         <div className="email-test-dialog-actions">
           <button ref={cancelRef} type="button" className="email-test-cancel" disabled={sending} onClick={() => setConfirmOpen(false)}>Cancel</button>
           <button id="email-test-confirm" type="button" className="email-test-confirm" disabled={sending} onClick={send}>{sending ? "Sending..." : "Send Test Email"}</button>
