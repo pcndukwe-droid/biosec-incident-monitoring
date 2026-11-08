@@ -207,3 +207,13 @@
 .scheduled-checks-search input::-webkit-search-cancel-button{cursor:pointer}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:720px){.scheduled-checks-tools{width:100%;min-width:0}.scheduled-checks-search{max-width:none}.scheduled-checks-pagination{padding:15px 18px}.scheduled-checks-page-buttons{width:100%;justify-content:space-between}}
+
+/* Protected OEM account actions must be visibly unavailable. */
+.user-record .user-actions button:disabled,
+.user-record .user-actions select:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+  background-color: #eef1ef;
+  border-color: #d9e2dc;
+  color: #78887d;
+}
