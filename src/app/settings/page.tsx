@@ -92,7 +92,7 @@ export default function SettingsPage() {
       </label>
       <label className="toggle"><input type="checkbox" disabled={!ready} checked={settings.emailEnabled} onChange={event=>setSettings(prev=>({...prev,emailEnabled:event.target.checked}))}/> Enable email notifications</label>
       <label className="toggle"><input type="checkbox" disabled={!ready} checked={settings.monitoringEnabled} onChange={event=>setSettings(prev=>({...prev,monitoringEnabled:event.target.checked}))}/> Enable Endpoint Monitoring</label>
-      <p className="help">Endpoint checks follow the intervals configured above. The underlying Cloudflare runtime also needs its monitoring permission enabled by the platform administrator. Gmail API delivery requires separate OAuth credentials in Cloudflare secrets.</p>
+      <p className="help">Endpoint checks follow the intervals configured above. The underlying Cloudflare runtime also needs its monitoring permission enabled by the platform administrator. Zoho SMTP delivery requires separately configured Cloudflare secrets and stays disabled until SMTP_ENABLED and email notifications are both enabled.</p>
       <button disabled={!ready || saving} type="submit">{saving ? "Saving..." : "Save settings"}</button>
     </form>
     {ready && <AdminUsers />}
