@@ -36,7 +36,7 @@ export default function TestEmailControl() {
       const json: { error?: string; message?: string } = await response.json();
       if (!response.ok) throw new Error(json.error ?? "Test email failed");
       setFailed(false);
-      setMessage(json.message ?? "Test email accepted by SMTP server.");
+      setMessage(json.message ?? "Test email submitted. Please check your inbox to confirm delivery.");
       setConfirmOpen(false);
     } catch (error) {
       setFailed(true);
@@ -52,7 +52,10 @@ export default function TestEmailControl() {
       <svg className="notification-envelope" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> Send Test Email
     </button>
     <p className="email-test-help">Send a single notification to the recipients saved in Settings. A test is sent only after confirmation.</p>
-    {message && <div className={"email-test-feedback " + (failed ? "email-test-error" : "email-test-success")} role="status">{message}</div>}
+    {message && <div className={"email-test-feedback " + (failed ? "email-test-error" : "email-test-success")} role="status">
+      <span className="email-feedback-symbol" aria-hidden="true">{failed ? "!" : "✓"}</span>
+      <span>{message}</span>
+    </div>}
 
     {confirmOpen && <div className="email-test-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !sending) setConfirmOpen(false); }}>
       <div className="email-test-dialog" role="dialog" aria-modal="true" aria-labelledby="email-test-dialog-title" aria-describedby="email-test-dialog-desc" onKeyDown={event => {
