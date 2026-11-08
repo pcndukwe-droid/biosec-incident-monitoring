@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       });
     });
     if (sendError) return Response.json({ error: sendError }, { status: 502 });
-    return Response.json({ message: "Test email accepted by the SMTP server. Check the recipient inbox." });
+    return Response.json({ message: "Test email submitted. Please check your inbox to confirm delivery." });
   } catch (error) {
     console.error("Biosec SMTP test failed", error instanceof Error ? error.name : "Unknown");
     return Response.json({ error: "Unable to complete email test" }, { status: 503 });
