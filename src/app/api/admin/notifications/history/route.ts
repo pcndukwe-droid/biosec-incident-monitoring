@@ -40,3 +40,53 @@ export async function DELETE(request: NextRequest) {
     return Response.json({ error: "Unable to delete notification history" }, { status: 503 });
   }
 }
+
+const PAGE_SIZE = 20;
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Server-side search and pagination: never truncate history to the first 100.
+export async function GET(request: NextRequest) {
+  const auth = await requireApiUser(request);
+  if (auth instanceof Response) return auth;
+  const params = request.nextUrl.searchParams;
+  const pageRaw = Number(params.get("page") || "1");
+  if (!Number.isSafeInteger(pageRaw) || pageRaw < 1 || pageRaw > 1000000)
+    return Response.json({ error: "Invalid page" }, { status: 400 });
+  const search = (params.get("search") || "").trim().slice(0, 100);
+  const regex = search ? new RegExp(escapeRegex(search), "i") : null;
+  const filter = regex ? {
+    $or: [
+      { kind: regex }, { status: regex },
+      { recipients: regex }, { error: regex },
+    ],
+  } : {};
+  try {
+    const result = await withMonitoringDb(auth.env, async db => {
+      const collection = db.collection("alert_notifications");
+      const total = await collection.countDocuments(filter);
+      const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      const page = Math.min(pageRaw, pageCount);
+      const data = await collection.find(filter)
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * PAGE_SIZE)
+        .limit(PAGE_SIZE)
+        .toArray();
+      return {
+        page, pageSize: PAGE_SIZE, total, pageCount,
+        rows: data.map(row => ({
+          id: String(row._id),
+          kind: String(row.kind || ""),
+          status: String(row.status || ""),
+          createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : null,
+          recipients: Array.isArray(row.recipients) ? row.recipients.filter((v: unknown) => typeof v === "string") : [],
+          error: typeof row.error === "string" ? row.error.slice(0, 200) : "",
+        })),
+      };
+    });
+    return Response.json(result, { headers: { "Cache-Control": "private, no-store" } });
+  } catch {
+    return Response.json({ error: "Unable to load notification history" }, { status: 503 });
+  }
+}
