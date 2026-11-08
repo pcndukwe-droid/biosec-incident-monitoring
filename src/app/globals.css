@@ -190,3 +190,20 @@
 .history-page-buttons button:disabled,.history-refresh-button:disabled{opacity:.48;cursor:not-allowed}
 .history-serial{font-weight:700;color:#5c7665;min-width:43px}
 @media(max-width:600px){.history-filter-bar,.history-pagination{padding-left:16px;padding-right:16px}.history-page-buttons{width:100%;justify-content:space-between}.history-search-group{flex-wrap:wrap}.history-refresh-button{width:100%}}
+
+/* Automatic monitoring checks: desktop header search and 20-record paging */
+.scheduled-checks-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.scheduled-checks-tools{display:flex;align-items:center;gap:12px;min-width:280px}
+.scheduled-checks-search{display:flex;align-items:center;gap:9px;min-width:210px;max-width:290px;flex:1;padding:9px 12px;border:1px solid #cddfd2;border-radius:9px;background:#fff;color:#789284}
+.scheduled-checks-search:focus-within{outline:2px solid #91d6a9;outline-offset:1px}
+.scheduled-checks-search input{width:100%;min-width:0;background:transparent;border:0;outline:0;color:#284633;font-size:12px;font-family:inherit}
+.scheduled-checks-number{font-weight:750;color:#64806e;min-width:44px}
+.scheduled-checks-pagination{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding:16px 28px;border-top:1px solid #e5eee8;color:#6d8574;font-size:12px}
+.scheduled-checks-page-buttons{display:flex;align-items:center;gap:12px}
+.scheduled-checks-page-buttons span{font-size:12px;font-weight:700;color:#3b5948;white-space:nowrap}
+.scheduled-checks-page-buttons button{border:1px solid #cddfd2;background:#fff;border-radius:8px;color:#2c6843;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer}
+.scheduled-checks-page-buttons button:hover:not(:disabled){background:#f0f8f2}
+.scheduled-checks-page-buttons button:disabled{opacity:.48;cursor:not-allowed}
+.scheduled-checks-search input::-webkit-search-cancel-button{cursor:pointer}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:720px){.scheduled-checks-tools{width:100%;min-width:0}.scheduled-checks-search{max-width:none}.scheduled-checks-pagination{padding:15px 18px}.scheduled-checks-page-buttons{width:100%;justify-content:space-between}}
