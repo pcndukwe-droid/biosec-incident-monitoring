@@ -123,3 +123,28 @@
 /* Operational overview: full-width monitoring panel without implementation details */
 .overview-monitor-panel{margin-top:20px;width:100%}
 .overview-monitor-panel>.panel{min-height:300px;width:100%}
+
+
+/* Branded, keyboard-accessible notification test confirmation */
+.email-test-area{margin:24px 0 22px}
+.email-test-trigger{display:inline-flex;align-items:center;gap:9px;padding:11px 17px;border:1px solid #078d42;border-radius:9px;background:#078f42;color:#fff;font-size:13px;font-weight:750;cursor:pointer;box-shadow:0 3px 10px rgba(8,120,58,.12)}
+.email-test-trigger:hover{background:#067735}.email-test-trigger:disabled{opacity:.6;cursor:not-allowed}
+.email-test-help{margin:9px 0 0;color:#788d7d;font-size:12px;line-height:1.6}
+.email-test-feedback{margin:13px 0;padding:12px 15px;border-radius:9px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.email-test-success{background:#edf8f0;color:#185d35;border:1px solid #bfdfc9}
+.email-test-error{background:#fff3f1;color:#963427;border:1px solid #f2cbc5}
+.email-test-backdrop{position:fixed;inset:0;z-index:1200;background:rgba(13,32,23,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.email-test-dialog{width:min(100%,440px);background:#fff;border:1px solid #e2ede5;box-shadow:0 22px 65px rgba(13,32,23,.24);border-radius:16px;padding:28px;color:#243d30}
+.email-test-dialog-icon{height:44px;width:44px;display:grid;place-items:center;border-radius:12px;background:#e8f7ed;color:#087d3b;font-size:24px;margin-bottom:16px}
+.email-test-dialog h2{font-size:21px;letter-spacing:-.02em;margin:0 0 10px;color:#1d3327}
+.email-test-dialog>p{color:#62786a;font-size:13px;line-height:1.7;margin:0 0 17px}
+.email-test-dialog-note{background:#f4f8f5;border:1px solid #e1eae3;border-radius:9px;padding:12px 14px;font-size:12px;line-height:1.6;color:#5b7564}
+.email-test-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.email-test-dialog-actions button{min-height:40px;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:750;cursor:pointer}
+.email-test-cancel{background:white;border:1px solid #cfded3;color:#456250}
+.email-test-cancel:hover{background:#f1f7f3}
+.email-test-confirm{background:#078f42;border:1px solid #078f42;color:#fff}
+.email-test-confirm:hover{background:#067735}
+.email-test-dialog-actions button:disabled{opacity:.55;cursor:not-allowed}
+.email-test-trigger:focus-visible,.email-test-dialog button:focus-visible{outline:3px solid #87d5a2;outline-offset:3px}
+@media(max-width:480px){.email-test-dialog{padding:22px}.email-test-dialog-actions{flex-direction:column-reverse}.email-test-dialog-actions button{width:100%}}
