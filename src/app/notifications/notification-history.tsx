@@ -12,6 +12,8 @@ export default function NotificationHistory({ initialRows, canManage }: Props) {
   const [rows, setRows] = useState(initialRows);
   const [pending, setPending] = useState<PendingDeletion | null>(null);
   const [working, setWorking] = useState(false);
+  const workingRef = useRef(false);
+  workingRef.current = working;
   const [error, setError] = useState("");
   const cancelRef = useRef<HTMLButtonElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
@@ -20,7 +22,7 @@ export default function NotificationHistory({ initialRows, canManage }: Props) {
     if (!pending) return;
     cancelRef.current?.focus();
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !working) setPending(null);
+      if (event.key === "Escape" && !workingRef.current) setPending(null);
       if (event.key === "Tab") {
         const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".history-confirmation button:not(:disabled)"));
         if (!buttons.length) return;
@@ -31,7 +33,7 @@ export default function NotificationHistory({ initialRows, canManage }: Props) {
     };
     document.addEventListener("keydown", handleKey);
     return () => { document.removeEventListener("keydown", handleKey); previousFocus.current?.focus(); };
-  }, [pending, working]);
+  }, [pending]);
 
   function askDelete(next: PendingDeletion) {
     previousFocus.current = document.activeElement as HTMLElement;
@@ -66,7 +68,7 @@ export default function NotificationHistory({ initialRows, canManage }: Props) {
       setWorking(false);
     }
   }
-  const completed = rows.filter(row => row.status !== "PENDING");
+  const completed = rows.filter(row => ["SENT", "FAILED", "CONFIGURATION_REQUIRED"].includes(row.status));
   const selected = pending?.scope === "one" ? rows.find(row => row.id === pending.id) : null;
   return <>
     <section className="workspace-panel">
@@ -91,7 +93,7 @@ export default function NotificationHistory({ initialRows, canManage }: Props) {
         </tbody></table></div>
       }
     </section>
-    {pending && <div className="email-test-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !working) setPending(null); }}>
+    {pending && <div className="email-test-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !workingRef.current) setPending(null); }}>
       <div className="email-test-dialog history-confirmation" role="dialog" aria-modal="true" aria-labelledby="history-delete-title" aria-describedby="history-delete-description">
         <div className="history-dialog-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m5 4v6m4-6v6"/></svg></div>
         <h2 id="history-delete-title">{pending.scope === "all" ? "Clear delivery history?" : "Delete this delivery record?"}</h2>
