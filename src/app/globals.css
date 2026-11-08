@@ -165,3 +165,13 @@
 .notification-envelope{display:block;flex-shrink:0}
 .email-test-dialog-icon .notification-envelope{width:23px;height:23px}
 @media(max-width:520px){.history-panel-actions{width:100%;justify-content:space-between}}
+
+/* Distinct navigation symbols replace the small square placeholders. */
+.nav-item .nav-dot{display:none}
+.nav-item .nav-icon{display:block;flex-shrink:0;color:#8da99b;transition:color .15s ease}
+.nav-item:hover .nav-icon{color:#d2f4dd}
+.nav-item.active .nav-icon{color:#46e183}
+.nav-item.active{gap:13px}
+.email-test-feedback{display:flex;align-items:center;gap:11px}
+.email-feedback-symbol{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:24px;height:24px;border-radius:50%;background:#d6f0dd;color:#157941;font-size:14px;font-weight:800}
+.email-test-error .email-feedback-symbol{background:#fbe0dc;color:#ac382e}
