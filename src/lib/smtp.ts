@@ -12,7 +12,7 @@ export function smtpConfigured(env: MonitoringEnv): boolean {
       env.SMTP_FROM && env.JWT_SECRET && env.WORKER_SELF_REFERENCE);
 }
 export async function sendSmtpAlert(
-  env: MonitoringEnv, recipients: string[], subject: string, body: string,
+  env: MonitoringEnv, recipients: string[], subject: string, body: string, html?: string,
 ): Promise<void> {
   if (!smtpConfigured(env)) throw new Error("SMTP configuration or internal binding missing");
   if (!recipients.length || recipients.length > 10 || !recipients.every(validAddress))
@@ -24,7 +24,7 @@ export async function sendSmtpAlert(
       "Content-Type": "application/json",
       "x-biosec-smtp-secret": env.JWT_SECRET!,
     },
-    body: JSON.stringify({ recipients, subject, body }),
+    body: JSON.stringify({ recipients, subject, body, ...(html ? { html } : {}) }),
     signal: AbortSignal.timeout(20000),
   });
   if (!response.ok) {
