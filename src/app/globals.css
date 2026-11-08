@@ -148,3 +148,20 @@
 .email-test-dialog-actions button:disabled{opacity:.55;cursor:not-allowed}
 .email-test-trigger:focus-visible,.email-test-dialog button:focus-visible{outline:3px solid #87d5a2;outline-offset:3px}
 @media(max-width:480px){.email-test-dialog{padding:22px}.email-test-dialog-actions{flex-direction:column-reverse}.email-test-dialog-actions button{width:100%}}
+
+/* Notification delivery history actions */
+.history-panel-heading{gap:16px;flex-wrap:wrap}
+.history-panel-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.history-clear-button{border:1px solid #e9c5c4;background:#fff7f6;color:#a53e38;border-radius:8px;padding:8px 13px;font-weight:700;font-size:12px;cursor:pointer}
+.history-clear-button:hover{background:#ffeded}
+.history-row-delete{border:1px solid #edcecb;background:#fff;color:#ab4840;border-radius:7px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.history-row-delete:hover{background:#fff1ef}
+.history-pending-note{font-size:11px;color:#85978a}
+.history-feedback{margin:12px 24px}
+.history-dialog-icon{height:44px;width:44px;display:grid;place-items:center;border-radius:12px;background:#fff0ee;color:#ac433a;margin-bottom:16px}
+.history-delete-confirm{background:#ac3b34;border:1px solid #ac3b34;color:#fff}
+.history-delete-confirm:hover{background:#942f2a}
+.history-clear-button:focus-visible,.history-row-delete:focus-visible,.history-delete-confirm:focus-visible{outline:3px solid #f3b0a9;outline-offset:2px}
+.notification-envelope{display:block;flex-shrink:0}
+.email-test-dialog-icon .notification-envelope{width:23px;height:23px}
+@media(max-width:520px){.history-panel-actions{width:100%;justify-content:space-between}}
