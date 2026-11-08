@@ -1,5 +1,6 @@
 import Link from "next/link";
 import WorkspaceShell from "../workspace-shell";
+import AutomaticChecksHistory from "./automatic-checks-history";
 import { monitoringActivity,reportDataError } from "../../lib/monitoring-views";
 export const dynamic="force-dynamic";
 const stamp=(v:string|null)=>v?new Date(v).toLocaleString():"—";
@@ -36,14 +37,7 @@ export default async function MonitoringPage(){
     </table></div>
     {!data.activity.length&&<div className="workspace-empty"><h3>No endpoints configured</h3><p>Start by registering an approved endpoint in Monitors.</p></div>}
    </section>
-   <section className="workspace-panel">
-    <div className="workspace-panel-head"><div><h2>Recent automatic checks</h2><p>Latest 100 scheduled check results; manual tests are not mixed into this history</p></div><span className="counter">{data.checks.length} checks</span></div>
-    {!data.checks.length?<div className="workspace-empty"><h3>No scheduled checks yet</h3><p>Checks appear in this table once endpoint monitoring is activated and the scheduler begins running.</p></div>:
-    <div className="table-wrap"><table className="work-table">
-     <thead><tr><th>Time</th><th>Endpoint</th><th>Result</th><th>HTTP</th><th>Response time</th><th>Details</th></tr></thead>
-     <tbody>{data.checks.map(c=><tr key={c.id}><td>{stamp(c.checkedAt)}</td><td><strong>{c.service}</strong></td><td><span className={"status-chip "+(c.healthy?"up":"down")}>{c.healthy?"PASS":"FAIL"}</span></td><td>{c.httpStatus??"—"}</td><td>{c.latencyMs===null?"—":c.latencyMs+" ms"}</td><td>{c.error??"—"}</td></tr>)}</tbody>
-    </table></div>}
-   </section>
+   <AutomaticChecksHistory />
   </>}
  </WorkspaceShell>;
 }
