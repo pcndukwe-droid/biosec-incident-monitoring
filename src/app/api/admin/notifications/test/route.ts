@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { requireApiUser, sameOrigin, throttle } from "../../../../../lib/server/auth";
 import { readSettings, withMonitoringDb, type MonitoringEnv } from "../../../../../lib/server/monitoring-db";
 import { sendSmtpAlert, smtpConfigured } from "../../../../../lib/smtp";
+import { renderAlertEmail } from "../../../../../lib/email-templates";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -30,11 +31,8 @@ export async function POST(request: NextRequest) {
     if ("error" in reserved) return Response.json({ error: reserved.error }, { status: reserved.status });
     let sendError: string | null = null;
     try {
-      await sendSmtpAlert(
-        env, reserved.recipients,
-        "[BIOSEC] Test notification",
-        "Biosec Incident Monitoring\r\n\r\nThis is a manually requested test notification.\r\nIf this email arrives, the configured SMTP service accepted the message.\r\n",
-      );
+      const email = renderAlertEmail({ kind: "TEST" });
+      await sendSmtpAlert(env, reserved.recipients, email.subject, email.text, email.html);
     } catch (error) {
       sendError = error instanceof Error ? error.message : "SMTP test failed";
     }
