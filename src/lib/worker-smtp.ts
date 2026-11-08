@@ -68,7 +68,7 @@ function singleLine(value: string): string {
   return value.replace(/[\r\n]/g, " ").slice(0, 180);
 }
 export async function deliverViaZoho(
-  env: MonitoringEnv, recipients: string[], subject: string, body: string,
+  env: MonitoringEnv, recipients: string[], subject: string, body: string, html?: string,
 ): Promise<void> {
   const host = env.SMTP_HOST ?? "";
   const port = Number(env.SMTP_PORT || "587");
@@ -115,14 +115,50 @@ export async function deliverViaZoho(
     }
     await channel.send("DATA\r\n");
     await channel.reply([354]);
-    const message = [
+    // MIME multipart/alternative ensures Outlook and Gmail display a branded
+    // HTML layout, while plain-text clients retain a readable fallback.
+    const boundary = "biosec-" + crypto.randomUUID().replace(/-/g, "");
+    const base64 = (input: string) => {
+      const bytes = new TextEncoder().encode(input);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 4096) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 4096));
+      }
+      return (btoa(binary).match(/.{1,76}/g) || []).join("\\r\\n");
+    };
+    const header = [
       "From: " + singleLine(env.SMTP_FROM_NAME || "Biosec Incident Monitoring") + " <" + from + ">",
       "To: " + to.join(", "),
       "Subject: " + singleLine(subject),
-      "MIME-Version: 1.0", "Content-Type: text/plain; charset=UTF-8",
-      "Content-Transfer-Encoding: 8bit", "",
-      body.replace(/\r?\n/g, "\r\n").replace(/(^|\r\n)\./g, "$1.."),
-    ].join("\r\n");
+      "MIME-Version: 1.0",
+    ];
+    let message: string;
+    if (html) {
+      message = [
+        ...header,
+        'Content-Type: multipart/alternative; boundary="' + boundary + '"',
+        "",
+        "--" + boundary,
+        "Content-Type: text/plain; charset=UTF-8",
+        "Content-Transfer-Encoding: base64",
+        "",
+        base64(body),
+        "--" + boundary,
+        "Content-Type: text/html; charset=UTF-8",
+        "Content-Transfer-Encoding: base64",
+        "",
+        base64(html),
+        "--" + boundary + "--",
+      ].join("\\r\\n");
+    } else {
+      message = [
+        ...header,
+        "Content-Type: text/plain; charset=UTF-8",
+        "Content-Transfer-Encoding: base64",
+        "",
+        base64(body),
+      ].join("\\r\\n");
+    }
     await channel.send(message + "\r\n.\r\n");
     await channel.reply([250]);
     await channel.send("QUIT\r\n");
