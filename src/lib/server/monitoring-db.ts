@@ -4,10 +4,14 @@ import type { MonitorFields } from "./monitor-config";
 export type MonitoringEnv = {
   MONGODB_URI?: string;
   MONITORING_ENABLED?: string;
-  GMAIL_CLIENT_ID?: string;
-  GMAIL_CLIENT_SECRET?: string;
-  GMAIL_REFRESH_TOKEN?: string;
-  GMAIL_SENDER?: string;
+  SMTP_ENABLED?: string;
+  SMTP_HOST?: string;
+  SMTP_PORT?: string;
+  SMTP_SECURE?: string;
+  SMTP_USERNAME?: string;
+  SMTP_PASSWORD?: string;
+  SMTP_FROM?: string;
+  SMTP_FROM_NAME?: string;
 };
 
 export interface MonitoringSettings {
