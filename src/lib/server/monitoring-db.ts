@@ -4,6 +4,8 @@ import type { MonitorFields } from "./monitor-config";
 export type MonitoringEnv = {
   MONGODB_URI?: string;
   MONITORING_ENABLED?: string;
+  JWT_SECRET?: string;
+  WORKER_SELF_REFERENCE?: { fetch(input: string | Request, init?: RequestInit): Promise<Response> };
   SMTP_ENABLED?: string;
   SMTP_HOST?: string;
   SMTP_PORT?: string;
