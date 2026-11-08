@@ -58,7 +58,7 @@ export default function SettingsPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "Unable to save");
       setSettings(result.settings);
-      setMessage("Settings saved in MongoDB Atlas.");
+      setMessage("Settings saved successfully.");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Unable to save settings");
     } finally {
@@ -70,7 +70,7 @@ export default function SettingsPage() {
     <div className="settings-top"><a href="/">← Monitoring overview</a><span>BIOSEC OPERATIONS</span></div>
     <div className="eyebrow">PLATFORM CONFIGURATION</div>
     <h1>Monitoring settings</h1>
-    <p>Configure how often checks run, incident thresholds and where notification emails are sent. All settings are saved to MongoDB; credentials remain in Cloudflare secrets.</p>
+    <p>Manage monitoring intervals, incident detection rules and notification recipients.</p>
     {message && <div className="settings-message" role="status">{message}</div>}
     <form onSubmit={save} className="settings-form">
       <h2>Scheduler and incident detection</h2>
@@ -92,7 +92,7 @@ export default function SettingsPage() {
       </label>
       <label className="toggle"><input type="checkbox" disabled={!ready} checked={settings.emailEnabled} onChange={event=>setSettings(prev=>({...prev,emailEnabled:event.target.checked}))}/> Enable email notifications</label>
       <label className="toggle"><input type="checkbox" disabled={!ready} checked={settings.monitoringEnabled} onChange={event=>setSettings(prev=>({...prev,monitoringEnabled:event.target.checked}))}/> Enable Endpoint Monitoring</label>
-      <p className="help">Endpoint checks follow the intervals configured above. The underlying Cloudflare runtime also needs its monitoring permission enabled by the platform administrator. Zoho SMTP delivery requires separately configured Cloudflare secrets and stays disabled until SMTP_ENABLED and email notifications are both enabled.</p>
+      <p className="help">Endpoint checks follow the intervals configured above. Email alerts are delivered when notifications are enabled and the email service is configured.</p>
       <button disabled={!ready || saving} type="submit">{saving ? "Saving..." : "Save settings"}</button>
     </form>
     {ready && <AdminUsers />}
