@@ -124,7 +124,7 @@ export async function deliverViaZoho(
       for (let i = 0; i < bytes.length; i += 4096) {
         binary += String.fromCharCode(...bytes.subarray(i, i + 4096));
       }
-      return (btoa(binary).match(/.{1,76}/g) || []).join("\\r\\n");
+      return (btoa(binary).match(/.{1,76}/g) || []).join("\r\n");
     };
     const header = [
       "From: " + singleLine(env.SMTP_FROM_NAME || "Biosec Incident Monitoring") + " <" + from + ">",
@@ -149,7 +149,7 @@ export async function deliverViaZoho(
         "",
         base64(html),
         "--" + boundary + "--",
-      ].join("\\r\\n");
+      ].join("\r\n");
     } else {
       message = [
         ...header,
@@ -157,7 +157,7 @@ export async function deliverViaZoho(
         "Content-Transfer-Encoding: base64",
         "",
         base64(body),
-      ].join("\\r\\n");
+      ].join("\r\n");
     }
     await channel.send(message + "\r\n.\r\n");
     await channel.reply([250]);
