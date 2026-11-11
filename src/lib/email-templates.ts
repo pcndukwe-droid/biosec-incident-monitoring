@@ -67,7 +67,7 @@ export function renderAlertEmail(input: AlertContent): { subject: string; text: 
 <body style="margin:0;padding:0;background:#f2f6f3;font-family:Arial,Helvetica,sans-serif;color:#21372a;">
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f2f6f3;padding:28px 12px;"><tr><td align="center">
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:620px;background:#ffffff;border:1px solid #deebe1;border-radius:14px;overflow:hidden;">
-<tr><td style="background:#123c28;padding:25px 30px;"><div style="color:#ffffff;font-size:21px;font-weight:bold;letter-spacing:1px;">BIOSEC</div><div style="color:#a8d3b9;font-size:11px;letter-spacing:2px;margin-top:5px;">INCIDENT MONITORING</div></td></tr>
+<tr><td style="background:#123c28;padding:25px 30px;"><div><span style="display:inline-block;color:#ffffff;font-size:21px;font-weight:bold;letter-spacing:1px;vertical-align:baseline;">BIOSEC</span><span style="display:inline-block;color:#a8d3b9;font-size:13px;font-weight:bold;letter-spacing:1.5px;vertical-align:baseline;margin-left:12px;">OPERATIONS</span></div><div style="color:#a8d3b9;font-size:11px;letter-spacing:2px;margin-top:5px;">INCIDENT MONITORING</div></td></tr>
 <tr><td style="padding:30px;">
 <div style="display:inline-block;background:${pillBg};color:${accent};font-weight:bold;font-size:11px;letter-spacing:1px;padding:8px 12px;border-radius:6px;">${safe(status)}</div>
 <h1 style="font-size:23px;line-height:1.35;margin:17px 0 12px;color:#1c3527;">${safe(title)}</h1>
