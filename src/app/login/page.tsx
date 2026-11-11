@@ -40,7 +40,7 @@ export default function LoginPage() {
   }
   return <main className="auth-screen">
     <section className="auth-card">
-      <div className="auth-brand"><div className="brand-mark">B<span>.</span></div><div><strong>BIOSEC</strong><small>INCIDENT MONITORING</small></div></div>
+      <div className="auth-brand"><div className="brand-mark">B<span>.</span></div><div><div style={{display:"flex",alignItems:"baseline",gap:10}}><strong>BIOSEC</strong><span style={{fontSize:11,fontWeight:700,letterSpacing:"1.2px",color:"#6a8b7b"}}>OPERATIONS</span></div><small>INCIDENT MONITORING</small></div></div>
       <span className="eyebrow">SECURE OPERATIONS PORTAL</span>
       <h1>Welcome back</h1>
       <p>Sign in with your authorized Biosec username and password.</p>
